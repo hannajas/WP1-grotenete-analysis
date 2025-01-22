@@ -7,7 +7,7 @@ env_data$photoperiod <- factor(as.numeric(hms(env_data$photoperiod),"minutes"))
 env_data$date <- factor(env_data$date)
 env_data$id <- 1:nrow(env_data)
 
-p <- ggplot (data = env_data,
+p <- ggplot(data = env_data,
 mapping = aes (x = date,
 y = photoperiod)) +
 geom_point () +
