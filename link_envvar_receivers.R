@@ -9,18 +9,24 @@ source("./src/concat_env_var_function.R")
 # Upload dataset
 data <- read_csv('./data/raw/migration.csv') 
 data$...1 <- NULL
+data$arrival <- dmy_hms(data$arrival)
+data$departure <- dmy_hms(data$departure)
+
 # need for columns tag_serial_number, migration and station_name to be factors?
 L07_077_Tw <- read_csv('./data/raw/L07_077_Tw.csv')
-
 rup02e_SF_1066_Tw <- read_csv('./data/raw/rup02e_SF_1066_Tw.csv')
 
 # META-DATA
 # 0 m from release_location
-resolution_unit_L <- "minutes"
-resolution_unit_rup <- "minutes"
-resolution_multiplier_L <- 15
-resolution_multiplier_rup <- 5
+metadata_Tw <- read_csv('./data/raw/Metadata_Tw.csv')
+n <- dim(metadata_Tw)[1] #number of variables
+metadata_Tw$resolution <- as.period(metadata_Tw$resolution_multiplier,metadata_Tw$resolution_unit)
+receiver <- lapply(1:n, function(i) {
+    data$station_name[which(round(data$distance_to_source_m, digits = 2) == round(metadata_Tw$distance_to_source[i], digits=2))][1]
+    })
+metadata_Tw$receiver <- unlist(receiver)
 
+# PRE_PROCESSING
 # unreliable values --> NA (I did a manual screen)
 begin1 <- which(L07_077_Tw$Timestamp == ymd_hms("2019-05-03 09:00:00 UTC"))
 eind1 <- which(L07_077_Tw$Timestamp == ymd_hms("2019-05-08 09:30:00 UTC"))
@@ -29,19 +35,39 @@ eind2 <- which(L07_077_Tw$Timestamp == ymd_hms("2019-05-28 12:30:00 UTC"))
 L07_077_Tw$Value[begin1:eind1] <- NA
 L07_077_Tw$Value[begin2:eind2] <- NA
 L07_077_Tw$Value <- as.numeric(L07_077_Tw$Value)
+L07_077_Tw$Timestamp <- ymd_hms(L07_077_Tw$Timestamp)
+rup02e_SF_1066_Tw$Timestamp <- ymd_hms(rup02e_SF_1066_Tw$Timestamp)
 
-#for 1 value
-dep_time <- round_date(data$departure,unit = minutes(15))
-arr_time <- round_date(data$arrival,unit = minutes(15))
+#could be shorter for when their are lots of environmental variables
 
+data <- concat_env_var(data, L07_077_Tw, metadata_Tw$resolution[1], "L07_077_Tw")
+data <- concat_env_var(data, rup02e_SF_1066_Tw, metadata_Tw$resolution[2], "rup02e_SF_1066_Tw")
+env_data <- data[(dim(data)[2]-(n-1)):dim(data)[2]]
 
+# Scratch
+# inverse distance weighting
+# use idw function from spatstat explore (ppp object is input)
+# from dim(data)[2] to dim(data[2])-n
+p <- 1
+#W <- matrix(, nrow = dim(data)[1], ncol = n)
+V <- as.matrix(env_data)
 
+W <- lapply(1:n, function(i) {
+    ifelse((data$distance_to_source_m - metadata_Tw$distance_to_source[i]) ==0, NA, abs(1/(data$distance_to_source_m - metadata_Tw$distance_to_source[i])^p))
 
-#data$L07_077_Tw <- mean(L07_077_Tw$Value[L07_077_Tw$Timestamp >= arr_time & L07_077_Tw$Timestamp <= dep_time], na.rm=TRUE)
-#data$L07_077_Tw <- rowMeans(L07_077_Tw$Value[L07_077_Tw$Timestamp >= arr_time & L07_077_Tw$Timestamp <= dep_time], na.rm=TRUE)
+})
+W <- matrix(unlist(W), ncol = 2)
+data$Tw <- rowSums(V*W)/rowSums(W)
 
-# MAKE USE OF LAPPLY to avoid for loops
-#x <- L070_077_Tw
-f1 <- function(i,x)  mean(x$Value[x$Timestamp >= arr_time[i] & x$Timestamp <= dep_time[i]], na.rm=TRUE)
-data$L07_077_Tw <- lapply(1:length(dep_time), f1, x = L07_077_Tw)
-#mean(L07_077_Tw$Value[L07_077_Tw$Timestamp >= test1 & L07_077_Tw$Timestamp <= test2], na.rm=TRUE)
+#unlist is important!!!
+#unlist(lapply(1:n, function(i) {
+#    data$Tw[data$station_name == metadata_Tw$receiver[i]] <- env_data[data$station_name == metadata_Tw$receiver[i],i]
+#    }))
+#Tw_old <- data$Tw
+#data$Tw[data$station_name == metadata_Tw$receiver[1]] <- env_data[data$station_name == metadata_Tw$receiver[1],1]
+for (i in 1:n) {
+    data$Tw <- replace(data$Tw, data$station_name == metadata_Tw$receiver[i],unlist(env_data[data$station_name == metadata_Tw$receiver[i],i]))
+}
+#data$Tw <- replace(data$Tw, data$station_name == metadata_Tw$receiver[i],unlist(env_data[data$station_name == metadata_Tw$receiver[i],i]))
+
+#data$Tw[data$station_name == metadata_Tw$receiver[i]] <- env_data[data$station_name == metadata_Tw$receiver[i],i]
