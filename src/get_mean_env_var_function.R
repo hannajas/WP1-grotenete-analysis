@@ -2,7 +2,7 @@ mean_env_var <- function(telemetry_data, metadata,p) {
     n <- nrow(metadata)
 
     for (i in seq_len(n)) {
-        telemetry_data$temp <- concat_env_var(telemetry_data, metadata[i])
+        telemetry_data$temp <- concat_env_var(telemetry_data, metadata[i,])
         names(telemetry_data)[dim(telemetry_data)[2]] <- metadata$name[i]
     }
 
@@ -28,5 +28,5 @@ mean_env_var <- function(telemetry_data, metadata,p) {
     #data$Tw <- replace(data$Tw, data$station_name == metadata_Tw$receiver[i],unlist(env_data[data$station_name == metadata_Tw$receiver[i],i]))
 
     #data$Tw[data$station_name == metadata_Tw$receiver[i]] <- env_data[data$station_name == metadata_Tw$receiver[i],i]
-    return()
+    return(telemetry_data)
 }

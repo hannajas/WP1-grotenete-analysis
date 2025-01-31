@@ -1,0 +1,43 @@
+for (i in seq_len(n)) {
+    data$temp <- concat_env_var(data, metadata_Tw[i,])
+    names(data)[dim(data)[2]] <- metadata_Tw$name[i]
+}
+
+metadata <- metadata_Tw[1,]
+path <- paste('./data/interim/processed/',metadata$name[1],'_Tw.csv', sep ="")
+test <- read_csv(path)
+test$Timestamp <- ymd_hms(test$Timestamp)
+dep_time <- round_date(data$departure,unit = metadata$resolution[1])
+arr_time <- round_date(data$arrival,unit = metadata$resolution[1])
+
+
+
+
+################################################################################################################################################################
+p <- 1
+#W <- matrix(, nrow = dim(data)[1], ncol = n)
+V <- as.matrix(env_data)
+nan_V <- which(is.nan(V))
+
+W <- lapply(1:n, function(i) {
+    ifelse((data$distance_to_source_m - metadata_Tw$distance_to_source[i]) ==0, NA, abs(1/(data$distance_to_source_m - metadata_Tw$distance_to_source[i])^p))
+
+})
+# dealing with the nan values in temperature values
+W[nan_V] <-  0
+
+W <- matrix(unlist(W), ncol = 2)
+data$Tw <- rowSums(V*W, na.rm = TRUE)/rowSums(W, na.rm = TRUE)
+
+#unlist is important!!!
+#unlist(lapply(1:n, function(i) {
+#    data$Tw[data$station_name == metadata_Tw$receiver[i]] <- env_data[data$station_name == metadata_Tw$receiver[i],i]
+#    }))
+#Tw_old <- data$Tw
+#data$Tw[data$station_name == metadata_Tw$receiver[1]] <- env_data[data$station_name == metadata_Tw$receiver[1],1]
+for (i in 1:n) {
+    data$Tw <- replace(data$Tw, data$station_name == metadata_Tw$receiver[i],unlist(env_data[data$station_name == metadata_Tw$receiver[i],i]))
+}
+#data$Tw <- replace(data$Tw, data$station_name == metadata_Tw$receiver[i],unlist(env_data[data$station_name == metadata_Tw$receiver[i],i]))
+
+#data$Tw[data$station_name == metadata_Tw$receiver[i]] <- env_data[data$station_name == metadata_Tw$receiver[i],i]

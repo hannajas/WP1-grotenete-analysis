@@ -4,6 +4,7 @@ library(tidyquant)
 
 # Source functions
 source("./src/concat_env_var_function.R")
+source("./src/get_mean_env_var_function.R")
 
 #Loading the raw environmental data
 L07_077_Tw <- read_csv('./data/raw/L07_077_Tw.csv')
@@ -37,3 +38,6 @@ write.csv(rup02e_SF_1066_Tw, './data/interim/processed/rup02e_SF_1066_Tw.csv')
 
 
 # Allign the environmental data in time to the telemetry data
+p <- 1
+
+#data <- mean_env_var(data, metadata_Tw,p)

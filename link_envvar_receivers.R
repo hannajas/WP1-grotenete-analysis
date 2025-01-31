@@ -5,12 +5,13 @@ library(patchwork)
 
 # Source functions
 source("./src/concat_env_var_function.R")
+source("./src/inverse_distance_function.R")
 
 # Upload dataset
 data <- read_csv('./data/raw/migration.csv') 
 data$...1 <- NULL
-data$arrival <- dmy_hms(data$arrival)
-data$departure <- dmy_hms(data$departure)
+data$arrival <- ymd_hms(data$arrival)
+data$departure <- ymd_hms(data$departure)
 
 # need for columns tag_serial_number, migration and station_name to be factors?
 L07_077_Tw <- read_csv('./data/raw/L07_077_Tw.csv')
@@ -38,36 +39,20 @@ L07_077_Tw$Value <- as.numeric(L07_077_Tw$Value)
 L07_077_Tw$Timestamp <- ymd_hms(L07_077_Tw$Timestamp)
 rup02e_SF_1066_Tw$Timestamp <- ymd_hms(rup02e_SF_1066_Tw$Timestamp)
 
+# unrealistic speed values
+data <- filter(data, speed_m_s <= 5)
 #could be shorter for when their are lots of environmental variables
 
-data <- concat_env_var(data, L07_077_Tw, metadata_Tw$resolution[1], "L07_077_Tw")
-data <- concat_env_var(data, rup02e_SF_1066_Tw, metadata_Tw$resolution[2], "rup02e_SF_1066_Tw")
+data$L07_077 <- concat_env_var(data, metadata_Tw[1,])
+data$rup02e_SF_1066 <- concat_env_var(data, metadata_Tw[2,])
 env_data <- data[(dim(data)[2]-(n-1)):dim(data)[2]]
 
-# Scratch
-# inverse distance weighting
+# INVERSE DISTANCE WEIGHTING
 # use idw function from spatstat explore (ppp object is input)
 # from dim(data)[2] to dim(data[2])-n
 p <- 1
-#W <- matrix(, nrow = dim(data)[1], ncol = n)
-V <- as.matrix(env_data)
+data$Tw <- inverse_distance(data, env_data, metadata_Tw,p)
 
-W <- lapply(1:n, function(i) {
-    ifelse((data$distance_to_source_m - metadata_Tw$distance_to_source[i]) ==0, NA, abs(1/(data$distance_to_source_m - metadata_Tw$distance_to_source[i])^p))
-
-})
-W <- matrix(unlist(W), ncol = 2)
-data$Tw <- rowSums(V*W)/rowSums(W)
-
-#unlist is important!!!
-#unlist(lapply(1:n, function(i) {
-#    data$Tw[data$station_name == metadata_Tw$receiver[i]] <- env_data[data$station_name == metadata_Tw$receiver[i],i]
-#    }))
-#Tw_old <- data$Tw
-#data$Tw[data$station_name == metadata_Tw$receiver[1]] <- env_data[data$station_name == metadata_Tw$receiver[1],1]
-for (i in 1:n) {
-    data$Tw <- replace(data$Tw, data$station_name == metadata_Tw$receiver[i],unlist(env_data[data$station_name == metadata_Tw$receiver[i],i]))
-}
-#data$Tw <- replace(data$Tw, data$station_name == metadata_Tw$receiver[i],unlist(env_data[data$station_name == metadata_Tw$receiver[i],i]))
-
-#data$Tw[data$station_name == metadata_Tw$receiver[i]] <- env_data[data$station_name == metadata_Tw$receiver[i],i]
+d1 <- ggplot()
+d1 <- d1 + geom_point(aes(Tw, speed_m_s), data = data, shape = 16, size = 5)
+d1
