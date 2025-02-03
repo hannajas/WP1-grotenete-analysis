@@ -4,7 +4,7 @@ library(rvest)
 
 #to get the ts_id
 # print(get_stations("water_temperature"))
-# L07_077 --> ts_id = 39305042
+# L10_077 --> ts_id = 39305042
 L07_077_Tw <- get_timeseries_tsid("39305042", from = "2019-01-01", to = "2021-02-28") #resolution = 15 minutes
 
 g <- ggplot(L07_077_Tw, aes(Timestamp, Value)) + 
@@ -22,3 +22,10 @@ write.csv(L07_077_Tw, './data/raw/L07_077_Tw.csv')
 base <- "hic"
 rup02e_SF_1066_Tw <- get_timeseries_tsid("103542010", from = "2019-01-01", to = "2021-02-28", datasource=4)
 write.csv(rup02e_SF_1066_Tw, './data/raw/rup02e_SF_1066_Tw.csv')
+
+base <- "hic"
+zes28a_SF_1066_Tw <- get_timeseries_tsid("45540010", from = "2019-01-01", to = "2021-02-28", datasource=4)
+write.csv(zes28a_SF_1066_Tw, './data/raw/zes28a_SF_1066_Tw.csv')
+
+zes24a_SF_1066  <- get_timeseries_tsid("46488010", from = "2019-01-01", to = "2021-02-28", datasource=4)
+write.csv(zes28a_SF_1066_Tw, './data/raw/zes24a_SF_1066_Tw.csv')

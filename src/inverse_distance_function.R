@@ -9,7 +9,7 @@ W <- lapply(1:n, function(i) {
 
 })
 
-W <- matrix(unlist(W), ncol = 2)
+W <- matrix(unlist(W), ncol = n)
 # dealing with the nan values in temperature values
 W[nan_V] <-  0
 

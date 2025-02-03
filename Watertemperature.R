@@ -1,6 +1,7 @@
 library(ggplot2)
 library(patchwork)
 library(lubridate)
+zes28a_SF_1066_Tw <- read_csv('./data/raw/zes28a_SF_1066_Tw.csv')
 L07_077_Tw <- read_csv('./data/raw/L07_077_Tw.csv')
 # zero values cannot be trusted AND some values surrounding this! (see Datatype.docx)
 L07_077_Tw$Value[L07_077_Tw$Value == 0] <- "NA"
@@ -11,6 +12,12 @@ Tw %>%
     Grote_nete_geel = Value.x,
     Rupel = Value.y
     )
+
+# plot one temperature
+g <- ggplot()
+g <- g + geom_line(aes(Timestamp, Value), data = zes28a_SF_1066_Tw, colour = "green")
+g <- g + theme(legend.position="top")
+
 # overview of values
 g <- ggplot()
 g <- g + geom_line(aes(Timestamp, Grote_nete_geel), data = Tw, colour = "green")
