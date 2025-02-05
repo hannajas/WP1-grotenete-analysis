@@ -15,7 +15,7 @@ Tw %>%
 
 # plot one temperature
 g <- ggplot()
-g <- g + geom_line(aes(Timestamp, Value), data = zes28a_SF_1066_Tw, colour = "green")
+g <- g + geom_line(aes(Timestamp, Value), data = zes19a_SF_B_1066, colour = "green")
 g <- g + theme(legend.position="top")
 
 # overview of values

@@ -13,7 +13,7 @@ data$station_name <- factor(data$station_name)
 
 env_data <- read_csv('./data/raw/photoperiod_verwerkt.csv')
 env_data$photoperiod <- as.numeric(hms(env_data$photoperiod),"minutes")
-env_data$delta_photoperiod <- env_data$photoperiod - dplyr::lag(env_data$photoperiod)
+env_data$delta_photoperiod <- lead(env_data$photoperiod) - env_data$photoperiod
 env_data$date <- ymd(env_data$date,tz="UTC")
 mydfnew.split.eel <- split(data, data$tag_serial_number) # split dataset based on tag IDs
 env_migration <- data.frame()

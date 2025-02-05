@@ -41,3 +41,29 @@ for (i in 1:n) {
 #data$Tw <- replace(data$Tw, data$station_name == metadata_Tw$receiver[i],unlist(env_data[data$station_name == metadata_Tw$receiver[i],i]))
 
 #data$Tw[data$station_name == metadata_Tw$receiver[i]] <- env_data[data$station_name == metadata_Tw$receiver[i],i]
+
+
+##########################################################################################
+n <- dim(metadata_Tw)[1]
+V <- as.matrix(env_data)
+nan_V <- which(is.nan(V))
+
+W <- lapply(1:n, function(i) {
+    ifelse((data$distance_to_source_m - metadata_Tw$distance_to_source[i]) ==0, NA, abs(1/(data$distance_to_source_m - metadata_Tw$distance_to_source[i])^p))
+
+})
+
+data$Tw <- rowSums(V*W, na.rm = TRUE)/rowSums(W, na.rm = TRUE)
+
+for (i in 1:n) {
+    data$Tw <- replace(data$Tw, data$station_name == metadata_Tw$receiver[i],unlist(env_data[data$station_name == metadata_Tw$receiver[i],i]))
+}
+
+
+for (i in 1:n) {
+    if (!is.na(metadata_Tw$receiver[i])) {
+    data$Tw <- replace(data$Tw, data$station_name == metadata_Tw$receiver[i],unlist(env_data[data$station_name == metadata_Tw$receiver[i],i]))
+    }
+}
+
+as.period(metadata_Tw$resolution_multiplier,metadata_Tw$resolution_unit)

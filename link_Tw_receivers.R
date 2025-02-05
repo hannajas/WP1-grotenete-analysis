@@ -1,4 +1,5 @@
 library(tidyverse)
+library(dplyr)
 library(lubridate)
 library(tidyquant)
 library(patchwork)
@@ -45,8 +46,7 @@ for (i in 1:n) {
     write.csv(get(paste(metadata_Tw$name[i],'_Tw', sep ="")), path)
 }
 
-# unrealistic speed values
-data <- filter(data, speed_m_s <= 5)
+
 #could be shorter for when their are lots of environmental variables
 for (i in 1:n) {
     data[metadata_Tw$name[i]] <- concat_env_var(data, metadata_Tw[i,])
@@ -58,7 +58,12 @@ env_data <- data[(dim(data)[2]-(n-1)):dim(data)[2]]
 # from dim(data)[2] to dim(data[2])-n
 p <- 1
 data$Tw <- inverse_distance(data, env_data, metadata_Tw,p)
+data$delta_Tw <- dplyr::lag(data$Tw) - data$Tw
 
+# unrealistic speed values
+data_filter <- filter(data, !startsWith(data$station_name, "ws-")) #+- 62 waarden uitgelaten
+
+#plot correlation
 d1 <- ggplot()
-d1 <- d1 + geom_point(aes(Tw, speed_m_s), data = data, shape = 16, size = 5)
+d1 <- d1 + geom_point(aes(Tw, speed_m_s), data = data_filter, shape = 16, size = 5)
 d1

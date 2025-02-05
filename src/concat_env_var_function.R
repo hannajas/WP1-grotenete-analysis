@@ -9,6 +9,6 @@ concat_env_var <- function(telemetry_data, metadata) {
 
     # calculate the mean temperature between arrival an departure
     telemetry_data$temp <- unlist(lapply(1:length(dep_time), function(i,x) { 
-        mean(x$Value[x$Timestamp >= arr_time[i] & x$Timestamp <= dep_time[i]], na.rm=TRUE) }, x = env_data))
+        mean(x$Value[x$Timestamp >= dep_time[i-1] & x$Timestamp <= arr_time[i]], na.rm=TRUE) }, x = env_data))
     return(telemetry_data$temp)
 }

@@ -2,6 +2,8 @@ library(wateRinfo)
 library(tidyverse)
 library(rvest)
 
+# WATER TEMPERATURE
+
 #to get the ts_id
 # print(get_stations("water_temperature"))
 # L10_077 --> ts_id = 39305042
@@ -27,5 +29,26 @@ base <- "hic"
 zes28a_SF_1066_Tw <- get_timeseries_tsid("45540010", from = "2019-01-01", to = "2021-02-28", datasource=4)
 write.csv(zes28a_SF_1066_Tw, './data/raw/zes28a_SF_1066_Tw.csv')
 
-zes24a_SF_1066  <- get_timeseries_tsid("46488010", from = "2019-01-01", to = "2021-02-28", datasource=4)
-write.csv(zes28a_SF_1066_Tw, './data/raw/zes24a_SF_1066_Tw.csv')
+zes09x_SF_1066  <- get_timeseries_tsid("110824010", from = "2019-01-01", to = "2021-02-28", datasource=4)
+write.csv(zes09x_SF_1066, './data/raw/zes09x_SF_1066_Tw.csv')
+
+zes01a_SF_1066  <- get_timeseries_tsid("51824010", from = "2019-01-01", to = "2021-02-28", datasource=4)
+write.csv(zes01a_SF_1066, './data/raw/zes01a_SF_1066_Tw.csv')
+
+# DEBIET ################################################################################################
+
+# find timeseries ID by https://download.waterinfo.be/tsmdownload/KiWIS/KiWIS?datasource=1&service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=html&station_no=L10_077&parametertype_name=Q
+
+# take the Pv.15 series
+# ts_id: 69694042
+L10_077_Q <- get_timeseries_tsid("69694042", from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=1)
+write.csv(L10_077_Q, './data/raw/discharge/L10_077_Q.csv')
+
+gnt07a_1066_Q <- get_timeseries_tsid("67302010", from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+write.csv(gnt07a_1066_Q, './data/raw/discharge/gnt07a_1066_Q.csv')
+
+gnt05a_1066_Q <- get_timeseries_tsid("69196010", from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+write.csv(gnt05a_1066_Q, './data/raw/discharge/gnt05a_1066_Q.csv')
+
+rup00a_1066_Q <- get_timeseries_tsid("75944010", from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+write.csv(rup00a_1066_Q, './data/raw/discharge/rup00a_1066_Q.csv')

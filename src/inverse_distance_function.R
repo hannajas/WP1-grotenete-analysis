@@ -22,7 +22,9 @@ telemetry_data$Tw <- rowSums(V*W, na.rm = TRUE)/rowSums(W, na.rm = TRUE)
 #Tw_old <- data$Tw
 #data$Tw[data$station_name == metadata_Tw$receiver[1]] <- env_data[data$station_name == metadata_Tw$receiver[1],1]
 for (i in 1:n) {
+    if (!is.na(metadata$receiver[i])) {
     telemetry_data$Tw <- replace(telemetry_data$Tw, telemetry_data$station_name == metadata$receiver[i],unlist(env_data[telemetry_data$station_name == metadata$receiver[i],i]))
+    }
 }
 return(telemetry_data$Tw)
 
