@@ -15,6 +15,11 @@ env_data <- read_csv('./data/raw/photoperiod_verwerkt.csv')
 env_data$photoperiod <- as.numeric(hms(env_data$photoperiod),"minutes")
 env_data$date <- ymd(env_data$date,tz="UTC")
 
+
+
+
+
+
 # Create pdf with distance tracks
 mydfnew.split.eel <- split(data, data$tag_serial_number) # split dataset based on tag IDs
 pdf("./figures/2019_grotenete_migration_photoperiod.pdf") # Create pdf

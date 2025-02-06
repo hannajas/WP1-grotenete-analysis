@@ -67,3 +67,16 @@ for (i in 1:n) {
 }
 
 as.period(metadata_Tw$resolution_multiplier,metadata_Tw$resolution_unit)
+
+#####################################################################################################################
+test <- metadata_Tw[1,]
+path <- paste('./data/interim/processed/',test$name[1],'_Tw.csv', sep ="")
+env_data <- read_csv(path)
+env_data$Timestamp <- ymd_hms(env_data$Timestamp, truncated =3)#ydm for temperature
+dep_time <- round_date(data$departure,unit = test$resolution[1])
+
+arr_time <- round_date(data$arrival,unit = test$resolution[1])
+
+# calculate the mean temperature between arrival an departure
+temp <- unlist(lapply(1:length(dep_time), function(i,x) { 
+    mean(x$Value[x$Timestamp >= dep_time[i] & x$Timestamp <= arr_time[i]], na.rm=TRUE) }, x = env_data))
