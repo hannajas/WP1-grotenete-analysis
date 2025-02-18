@@ -9,7 +9,7 @@ source("./src/concat_env_var_function.R")
 source("./src/inverse_distance_function.R")
 
 # Upload dataset
-data <- read_csv('./data/raw/migration.csv')
+data <- read_csv('./data/interim/migration.csv')
 data$...1 <- NULL
 
 # META-DATA
@@ -75,7 +75,7 @@ d1 <- d1 +
     axis.text.y = element_text(size = 25, colour = "black"),
     axis.title.y = element_text(size = 25))
 #d1 <- d1 + xlim(-6,3)
-ggsave('./figures/correlations/delta_watertemperature.png')
+#ggsave('./figures/correlations/delta_watertemperature.png')
 
 p <- ggplot(data_filter, aes(Tw, speed_m_s))+
 geom_point(shape = 16, size = 5)+ geom_smooth(method=lm, size = 2)+
@@ -85,7 +85,7 @@ axis.text.x = element_text(size = 20, colour = "black", angle=90),
 axis.title.x = element_text(size = 25),
 axis.text.y = element_text(size = 25, colour = "black"),
 axis.title.y = element_text(size = 25))
-ggsave('./figures/correlations/watertemperature.png')
+#ggsave('./figures/correlations/watertemperature.png')
 
 g <- ggplot(data_filter, aes(Tw, downstream_migration))+
 geom_point(shape = 16, size = 5)+
@@ -95,7 +95,7 @@ axis.text.x = element_text(size = 20, colour = "black", angle=90),
 axis.title.x = element_text(size = 25),
 axis.text.y = element_text(size = 25, colour = "black"),
 axis.title.y = element_text(size = 25))
-ggsave('./figures/watertemperature_mirgation.png')
+#ggsave('./figures/watertemperature_mirgation.png')
 
 
 #plot correlation

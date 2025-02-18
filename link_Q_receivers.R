@@ -9,7 +9,7 @@ source("./src/concat_env_var_function_Q.R")
 source("./src/inverse_distance_function.R")
 
 # Upload dataset
-data <- read_csv('./data/raw/migration.csv')
+data <- read_csv('./data/interim/migration.csv')
 data$...1 <- NULL
 data$arrival <- ymd_hms(data$arrival)
 data$departure <- ymd_hms(data$departure)
@@ -34,7 +34,7 @@ for (i in 1:n) {
 }
 
 # PRE_PROCESSING
-rup00a_1066_Q$Timestamp <- floor_date(dmy_hms(rup00a_1066_Q$Timestamp,truncated=3),unit_test)
+rup00a_1066_Q$Timestamp <- floor_date(dmy_hms(rup00a_1066_Q$Timestamp,truncated=3),"day")
 for (i in 1:n) {
     path <- paste('./data/interim/processed/',metadata_Tw$name[i],'_Q.csv', sep ="")
     write.csv(get(paste(metadata_Tw$name[i],'_Q', sep ="")), path)
@@ -71,11 +71,11 @@ axis.text.y = element_text(size = 25, colour = "black"),
 axis.title.y = element_text(size = 25))+
 labs(x = "Debiet [m^3/s]",
     y = "speed_m_s")
-ggsave('./figures/correlations/debiet.png')
+#ggsave('./figures/correlations/debiet.png')
 
 
 
-p <- ggplot(data_filter, aes(Tw, downstream_migration))+
+p1 <- ggplot(data_filter, aes(Tw, downstream_migration))+
 geom_point(shape = 16, size = 5)+
 theme(
 axis.line = element_line(colour = "black"),

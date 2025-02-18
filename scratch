@@ -80,3 +80,21 @@ arr_time <- round_date(data$arrival,unit = test$resolution[1])
 # calculate the mean temperature between arrival an departure
 temp <- unlist(lapply(1:length(dep_time), function(i,x) { 
     mean(x$Value[x$Timestamp >= dep_time[i] & x$Timestamp <= arr_time[i]], na.rm=TRUE) }, x = env_data))
+
+
+
+
+
+#####################################################################################################################
+  if (nrow(movements) > 1) {
+  #appendTo("debug", "Running movementSpeeds.")
+  lapply(2:nrow(movements), function(i) {
+      a.sec <- as.numeric(difftime(movements$arrival[i], movements$departure[i - 1], units = "secs"))
+      movements$swimtime_s[i] <<- a.sec + movements$residence[i]/2 + movements$residence[i-1]/2
+      print(paste("swimtime:", movements$swimtime_s[i]))
+      my.dist <- dist.mat[movements$station_name[i], gsub(" ", ".", movements$station_name[i - 1])]
+      movements$speed_m_s[i] <<- round(my.dist/a.sec, 6)
+      rm(a.sec, my.dist)
+      print(paste("speed:", movements$speed_m_s[i]))
+  })
+  }
