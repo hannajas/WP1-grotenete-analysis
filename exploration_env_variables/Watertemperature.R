@@ -1,13 +1,11 @@
 library(ggplot2)
 library(patchwork)
 library(lubridate)
-zes28a_SF_1066_Tw <- read_csv('./data/raw/zes28a_SF_1066_Tw.csv')
-L07_077_Tw <- read_csv('./data/raw/L07_077_Tw.csv')
-# zero values cannot be trusted AND some values surrounding this! (see Datatype.docx)
-L07_077_Tw$Value[L07_077_Tw$Value == 0] <- "NA"
-rup02e_SF_1066_Tw <- read_csv('./data/raw/rup02e_SF_1066_Tw.csv')
+zes28a_SF_1066_Tw <- read_csv('./data/interim/processed/zes28a_SF_1066_Tw.csv')
+L07_077_Tw <- read_csv('./data/interim/processed/L07_077_Tw.csv')
+rup02e_SF_1066_Tw <- read_csv('./data/interim/processed/rup02e_SF_1066_Tw.csv')
 Tw <- left_join(L07_077_Tw, rup02e_SF_1066_Tw, by = "Timestamp")
-Tw %>%
+Tw <- Tw %>%
   rename(
     Grote_nete_geel = Value.x,
     Rupel = Value.y
@@ -15,7 +13,7 @@ Tw %>%
 
 # plot one temperature
 g <- ggplot()
-g <- g + geom_line(aes(Timestamp, Value), data = zes19a_SF_B_1066, colour = "green")
+g <- g + geom_line(aes(Timestamp, Value), data = rup02e_SF_1066_Tw, colour = "green")
 g <- g + theme(legend.position="top")
 
 # overview of values

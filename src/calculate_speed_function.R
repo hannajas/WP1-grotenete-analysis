@@ -21,7 +21,6 @@ movementSpeeds <- function(movements, dist.mat) {
       } else {
         movements$speed_m_s[i] <<- NA_real_
       }
-    print(paste("speed:", movements$speed_m_s[i]))
     })
   }
   return(movements)
