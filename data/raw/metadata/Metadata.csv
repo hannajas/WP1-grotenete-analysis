@@ -1,0 +1,15 @@
+﻿name,distance_to_source,resolution_unit,resolution_multiplier,type,segment
+L07_077,0,minutes,15,Tw,
+rup02e_SF_1066,62601.73428,minutes,5,Tw,
+zes28a_SF_1066,72906.86678,minutes,10,Tw,
+zes24a_SF_1066,76829.7,minutes,10,Tw,
+zes19a_SF_B_1066,87897.2,minutes,5,Tw,
+zes09x_SF_1066,100616.9768,minutes,5,Tw,
+zes01a_SF_1066,107553.25,minutes,5,Tw,
+L10_077,0,minutes,15,Q,gn
+gnt07a_1066,8702.5,minutes,15,Q,gn
+gnt05a_1066,21342.3,minutes,5,Q,gn
+rup00a_1066,69913.4,day,1,Q,rup
+zes29f_1066,70592.836,day,1,Q,zes
+zes00a_1066,107867.4256,day,1,Q,zes
+photoperiod,,day,1,photoperiod,

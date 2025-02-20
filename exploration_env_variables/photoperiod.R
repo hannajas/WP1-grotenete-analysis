@@ -2,10 +2,16 @@ library(tidyverse)
 library(lubridate)
 library(tidyquant)
 
-env_data <- read_csv('data/raw/photoperiod_verwerkt.csv')
-env_data$photoperiod <- factor(as.numeric(hms(env_data$photoperiod),"minutes"))
-env_data$date <- factor(env_data$date)
-env_data$id <- 1:nrow(env_data)
+metadata <- read_csv('./data/raw/metadata/Metadata.csv', show_col_types = FALSE)
+metadata_p <- filter(metadata, metadata$type == "photoperiod")
+
+photoperiod_photoperiod <- read_csv('data/raw/photoperiod_verwerkt.csv')
+photoperiod_photoperiod$Value <- factor(as.numeric(hms(photoperiod_photoperiod$photoperiod),"minutes"))
+photoperiod_photoperiod$Timestamp <- factor(photoperiod_photoperiod$date)
+photoperiod_photoperiod$id <- 1:nrow(photoperiod_photoperiod)
+
+path <- paste('./data/interim/processed/',metadata_p$name[1],'_photoperiod.csv', sep ="")
+write.csv(get(paste(metadata_p$name[1],'_photoperiod', sep ="")), path)
 
 p <- ggplot(data = env_data,
 mapping = aes (x = date,

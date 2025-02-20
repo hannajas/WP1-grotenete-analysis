@@ -1,31 +1,45 @@
-inverse_distance <- function(telemetry_data, env_data, metadata,p) {
-#W <- matrix(, nrow = dim(data)[1], ncol = n)
-n <- dim(metadata)[1]
+inverse_distance <- function(telemetry_data, env_data, metadata,p, data_type) {
+metadata_filter <- filter(metadata, metadata$type == data_type)
+
+n <- dim(metadata_filter)[1]
 V <- as.matrix(env_data)
-nan_V <- which(is.nan(V))
+nan_V <<- which(is.nan(V))
 
 W <- lapply(1:n, function(i) {
-    ifelse((telemetry_data$distance_to_source_m - metadata$distance_to_source[i]) ==0, NA, abs(1/(telemetry_data$distance_to_source_m - metadata$distance_to_source[i])^p))
+    ifelse((telemetry_data$distance_to_source_m - metadata_filter$distance_to_source[i]) ==0, NaN, abs(1/(telemetry_data$distance_to_source_m - metadata_filter$distance_to_source[i])^p))
 
 })
 
 W <- matrix(unlist(W), ncol = n)
+
 # dealing with the nan values in temperature values
 W[nan_V] <-  0
 
-telemetry_data$Tw <- rowSums(V*W, na.rm = TRUE)/rowSums(W, na.rm = TRUE)
+if (data_type == "Q") {
+    grenswaardes_distance_to_source <- c(43106.96,70306.3)#boundaries between de different river segments (Grote Nete, Rupel, Schelde)
+    telemetry_data$river_segment <- "rup"
+    telemetry_data$river_segment[telemetry_data$distance_to_source < grenswaardes_distance_to_source[1]] <- "gn"
+    telemetry_data$river_segment[telemetry_data$distance_to_source > grenswaardes_distance_to_source[2]] <- "zes"
 
-#unlist is important!!!
-#unlist(lapply(1:n, function(i) {
-#    data$Tw[data$station_name == metadata_Tw$receiver[i]] <- env_data[data$station_name == metadata_Tw$receiver[i],i]
-#    }))
-#Tw_old <- data$Tw
-#data$Tw[data$station_name == metadata_Tw$receiver[1]] <- env_data[data$station_name == metadata_Tw$receiver[1],1]
+    #spelen met W
+    ind_row_gn <- which(telemetry_data$river_segment == "gn")
+    ind_col_gn <- which(metadata_filter$segment != "gn")
+    ind_row_rup <- which(telemetry_data$river_segment == "rup")
+    ind_col_rup <- which(metadata_filter$segment != "rup")
+    ind_row_zes <- which(telemetry_data$river_segment == "zes")
+    ind_col_zes <- which(metadata_filter$segment != "zes")
+    W[ind_row_gn,ind_col_gn] <- 0
+    W[ind_row_rup,ind_col_rup] <- 0
+    W[ind_row_zes,ind_col_zes] <- 0
+}
+
+telemetry_data$temp <- rowSums(V*W, na.rm = TRUE)/rowSums(W, na.rm = TRUE)
+
 for (i in 1:n) {
-    if (!is.na(metadata$receiver[i])) {
-    telemetry_data$Tw <- replace(telemetry_data$Tw, telemetry_data$station_name == metadata$receiver[i],unlist(env_data[telemetry_data$station_name == metadata$receiver[i],i]))
+    if (!is.na(metadata_filter$receiver[i])) {
+    telemetry_data$temp <- replace(telemetry_data$temp, telemetry_data$station_name == metadata_filter$receiver[i],unlist(env_data[telemetry_data$station_name == metadata_filter$receiver[i],i]))
     }
 }
-return(telemetry_data$Tw)
+return(telemetry_data$temp)
 
 }

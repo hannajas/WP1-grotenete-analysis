@@ -52,3 +52,10 @@ write.csv(gnt05a_1066_Q, './data/raw/discharge/gnt05a_1066_Q.csv')
 
 rup00a_1066_Q <- get_timeseries_tsid("75944010", from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
 write.csv(rup00a_1066_Q, './data/raw/discharge/rup00a_1066_Q.csv')
+
+zes29f_1066_Q <- get_timeseries_tsid("83735010", from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+write.csv(zes29f_1066_Q, './data/raw/discharge/zes29f_1066_Q.csv')
+
+zes00a_1066_Q <- get_timeseries_tsid("67748010", from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+write.csv(zes00a_1066_Q, './data/raw/discharge/zes00a_1066_Q.csv')
+#ts_id = 83735010
