@@ -3,12 +3,18 @@ metadata_filter <- filter(metadata, metadata$type == data_type)
 
 n <- dim(metadata_filter)[1]
 V <- as.matrix(env_data)
-nan_V <<- which(is.nan(V))
+nan_V <- which(is.nan(V))
 
-W <- lapply(1:n, function(i) {
-    ifelse((telemetry_data$distance_to_source_m - metadata_filter$distance_to_source[i]) ==0, NaN, abs(1/(telemetry_data$distance_to_source_m - metadata_filter$distance_to_source[i])^p))
-
-})
+if (data_type == "R") {
+    W <- lapply(1:n, function(i) {
+        distance <- distm(telemetry_data[c("deploy_longitude","deploy_latitude")],metadata[c("station_longitude","station_latitude")][i,],fun = distHaversine)
+        ifelse((distance==0), NaN, abs(1/(distance)^p))
+    })
+} else {
+    W <- lapply(1:n, function(i) {
+        ifelse((telemetry_data$distance_to_source_m - metadata_filter$distance_to_source[i]) ==0, NaN, abs(1/(telemetry_data$distance_to_source_m - metadata_filter$distance_to_source[i])^p))
+    })
+}
 
 W <- matrix(unlist(W), ncol = n)
 
@@ -18,8 +24,8 @@ W[nan_V] <-  0
 if (data_type == "Q") {
     grenswaardes_distance_to_source <- c(43106.96,70306.3)#boundaries between de different river segments (Grote Nete, Rupel, Schelde)
     telemetry_data$river_segment <- "rup"
-    telemetry_data$river_segment[telemetry_data$distance_to_source < grenswaardes_distance_to_source[1]] <- "gn"
-    telemetry_data$river_segment[telemetry_data$distance_to_source > grenswaardes_distance_to_source[2]] <- "zes"
+    telemetry_data$river_segment[telemetry_data$distance_to_source_m < grenswaardes_distance_to_source[1]] <- "gn"
+    telemetry_data$river_segment[telemetry_data$distance_to_source_m > grenswaardes_distance_to_source[2]] <- "zes"
 
     #spelen met W
     ind_row_gn <- which(telemetry_data$river_segment == "gn")
@@ -32,7 +38,7 @@ if (data_type == "Q") {
     W[ind_row_rup,ind_col_rup] <- 0
     W[ind_row_zes,ind_col_zes] <- 0
 }
-
+show_W <<- W
 telemetry_data$temp <- rowSums(V*W, na.rm = TRUE)/rowSums(W, na.rm = TRUE)
 
 for (i in 1:n) {

@@ -15,6 +15,22 @@ data$...1 <- NULL
 data$arrival <- ymd_hms(data$arrival)
 data$departure <- ymd_hms(data$departure)
 
+# recalculate the smooth eel track (stop timelimit = 1 hour for original preprocessing)
+station_oud <- "random"
+for(i in 1:1085){
+    print(paste(i))
+    print(paste(data$station_name[i+1]))
+    if((data$station_name[i] == data$station_name[i+1] & data$tag_serial_number[i] == data$tag_serial_number[i+1])){
+        station_oud <- data$station_name[i]
+        while(data$station_name[i+1] == station_oud){
+            data$departure[i] <- data$departure[i+1]
+            data$detections[i] <- data$detections[i] + data$detections[i+1]
+            data <- data[-(i+1),]
+        }
+    }
+}
+
+
 # Turn dataset into list per tag_serial_number
 residency_list <- split(data , f = data$tag_serial_number)
 #sapply(residency_list, function(x) max(x$detections))

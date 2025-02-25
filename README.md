@@ -21,7 +21,7 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
         - resolution_multiplier: multipier of this unit of resolution
 	+ `photoperiod.csv`: dataset containing the daily amaount of daylight (unit: minutes)
 * `/interim:`
-	+ `migration.csv`: dataset containing eel tracks and alterantive speed calculation
+	+ `migration.csv`: dataset containing eel tracks and alternative speed calculation
     + `\processed`: contains all environmental data again, now processed. E.g.:
         - 0 --> NA-value, if nessecary
         - changing the timestamps of the daily average discharge
@@ -44,5 +44,6 @@ Sequence of processing:
 
     + For each data point: `\src\concat_env_var_function.R:` function to average the environmental data over the swimtimes of the eels between 2 receivers.
     + `\src\inverse_distance_function.R:` get one value out of the different datapoints by performing inverse distance weighting for each point in the migration trajectory
+        - When datatype = "Q", there are 3 segments defined. To link environmental data with the receivers each receiver can only get information from data-point that are located whitin the same segment.
 
     Plotting correlation functions

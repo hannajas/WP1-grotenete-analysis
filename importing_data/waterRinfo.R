@@ -59,3 +59,54 @@ write.csv(zes29f_1066_Q, './data/raw/discharge/zes29f_1066_Q.csv')
 zes00a_1066_Q <- get_timeseries_tsid("67748010", from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
 write.csv(zes00a_1066_Q, './data/raw/discharge/zes00a_1066_Q.csv')
 #ts_id = 83735010
+
+
+
+
+
+######################################################################
+# RAINFALL
+stations <- get_stations("rainfall", frequency = "15min") %>% 
+    filter(station_longitude > 4 & station_latitude > 50.88)
+for (i in 1:nrow(stations)){
+    ts_id <- stations$ts_id[i]
+    station_name <- stations$station_no[i]
+    print(station_name)
+    print(ts_id)
+    rainfall <- get_timeseries_tsid(ts_id, from = "2019-01-01 UTC", to = "2021-02-28 UTC")
+    path <- paste('./data/raw/rainfall/', station_name, '_R.csv',sep ="")
+    write.csv(rainfall, path)
+}
+
+
+######################################################################
+# salinity
+ts_id <- c(110938010,46619010,103659010)
+name <- c("zes09x-SF-1066", "zes24a-SF-1066","rup02e-SF-1066")
+for (i in 1:length(ts_id)){
+    salinity <- get_timeseries_tsid(ts_id[i], from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+    path <- paste('./data/raw/salinity/', name[i], '_S.csv',sep ="")
+    write.csv(salinity, path)
+}
+
+
+######################################################################
+# turbidity
+ts_id <- c(110971010,46651010,103692010)
+name <- c("zes09x_SF_1066", "zes24a_SF_1066","rup02e_SF_1066")
+for (i in 1:length(ts_id)){
+    turbidity <- get_timeseries_tsid(ts_id[i], from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+    path <- paste('./data/raw/turbidity/', name[i], '_turb.csv',sep ="")
+    write.csv(turbidity, path)
+}
+
+
+######################################################################
+# oxygen
+ts_id <- c(110898010,46561010,103603010)
+name <- c("zes09x_SF_1066", "zes24a_SF_1066","rup02e_SF_1066")
+for (i in 1:length(ts_id)){
+    oxygen <- get_timeseries_tsid(ts_id[i], from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+    path <- paste('./data/raw/oxygen/', name[i], '_O.csv',sep ="")
+    write.csv(oxygen, path)
+}

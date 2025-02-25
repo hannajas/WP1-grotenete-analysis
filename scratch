@@ -98,3 +98,20 @@ temp <- unlist(lapply(1:length(dep_time), function(i,x) {
       print(paste("speed:", movements$speed_m_s[i]))
   })
   }
+
+  #####################################################################################################################
+i<-1
+data_temp <- filter(data_filter, dplyr::lag(station_name) == seq_af[i] & station_name == seq_af[i+1])
+p1 <- ggplot(data_temp, aes(Tw, speed_m_s))+
+geom_point(shape = 16, size = 5)+ geom_smooth(method=lm, size = 2)+
+theme(
+axis.line = element_line(colour = "black"),
+axis.text.x = element_text(size = 20, colour = "black", angle=90),
+axis.title.x = element_text(size = 25),
+axis.text.y = element_text(size = 25, colour = "black"),
+axis.title.y = element_text(size = 25))+
+labs(x = "Temperature [°C]",
+    y = "speed_m_s")
+
+
+test <- filter(data_filter, dplyr::lag(station_name) == seq_af[1] & station_name == seq_af[8+1])
