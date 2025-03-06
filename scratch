@@ -115,3 +115,18 @@ labs(x = "Temperature [°C]",
 
 
 test <- filter(data_filter, dplyr::lag(station_name) == seq_af[1] & station_name == seq_af[8+1])
+
+
+
+
+####################################################################################################
+    if(dim(x)[1]>=2){
+        for(i in 2:dim(x)[1]){
+            print(paste(i))
+            if (x$station_name[i] == "s-7"|x$station_name[i] == "s-6"|x$station_name[i] == "s-5"|x$station_name[i] == "s-4c"|x$station_name[i] == "s-4b"|x$station_name[i] == "s-4a"){
+                x$downstream[i] <- ifelse(x$distance_to_source_m[i] > x$distance_to_source_m[i-1], 0, 1)
+            } else {
+            x$downstream[i] <- ifelse(x$distance_to_source_m[i] > x$distance_to_source_m[i-1], 1, 0)
+            }
+        }
+    }

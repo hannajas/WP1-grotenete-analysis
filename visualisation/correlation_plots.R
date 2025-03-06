@@ -158,7 +158,7 @@ labs(x = "S [mm]",
 # TURBIDITY
 data_filter <- filter(data, !startsWith(data$station_name, "ws-"))
 
-T1 <- ggplot(data_filter, aes(turb, speed_m_s))+
+T1 <- ggplot(data_filter, aes(turb, migration_speed))+
 geom_point(shape = 16, size = 5)+#geom_smooth(method = lm,formula = y ~ log(x))+
 theme(
 axis.line = element_line(colour = "black"),

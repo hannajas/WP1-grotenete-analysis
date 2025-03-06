@@ -134,7 +134,7 @@ ggplot() + geom_line(aes(arrival, -1*distance_to_source_m/1000), data = data2, c
   geom_hline(yintercept = -1*data2$distance_to_source_m/1000, colour = "gray", size = 0.5, linetype = "dashed") +
   #annotate("text",x = data2$arrival[1] - (300*60*60), y = data2$distance_to_source_m, label = data2$station_name, hjust=0, colour="red", size = 5) +
   theme(legend.position="none")
-ggsave('./figures/distance_plot_labelled.png')
+#ggsave('./figures/distance_plot_labelled.png')
 
 
 #grey

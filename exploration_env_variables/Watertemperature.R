@@ -40,8 +40,11 @@ Tw <- Tw %>%
 
 # plot one temperature
 g <- ggplot()
-g <- g + geom_line(aes(Timestamp, Value), data = rup02e_SF_1066_Tw, colour = "green")
+g <- g + geom_line(aes(Timestamp, Value), data = L07_077_Tw[(L07_077_Tw$Timestamp>="2019-12-10"&L07_077_Tw$Timestamp<="2019-12-16"),], colour = "green")
 g <- g + theme(legend.position="top")
+g <- g + scale_x_datetime(date_breaks  ="1 day")
+g <- g + theme(axis.text.x = element_text(size = 14, colour = "black", angle=90),axis.title.x=element_text(size=16),axis.title.y=element_text(size=16), axis.text.y = element_text(size = 14))
+
 
 # overview of values
 g <- ggplot()

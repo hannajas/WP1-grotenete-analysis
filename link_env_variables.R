@@ -22,6 +22,10 @@ metadata <- read_csv('./data/interim/Metadata.csv', show_col_types = FALSE)
 # averaging the environmental variables to fit telemetry data
 env_data_Tw <- concat_all_env_vars(data, "Tw", metadata)
 env_data_Q <- concat_all_env_vars(data, "Q", metadata)
+#divide dataframe env_data_Q by its column means
+env_data_Q_norm <- env_data_Q/colMeans(env_data_Q, na.rm = TRUE)
+
+
 env_data_photoperiod <- concat_all_env_vars(data, "photoperiod", metadata)
 env_data_R <- concat_all_env_vars(data, "R", metadata)
 env_data_S <- concat_all_env_vars(data, "S", metadata)
@@ -31,7 +35,7 @@ env_data_O <- concat_all_env_vars(data, "O", metadata)
 # INVERSE DISTANCE WEIGHTING
 p <- 1
 data$Tw <- inverse_distance(data, env_data_Tw, metadata,p,"Tw") # in deze functie nog filteren in meta data
-data$Q <- inverse_distance(data, env_data_Q, metadata,p,"Q")
+data$Q <- inverse_distance(data, env_data_Q_norm, metadata,p,"Q")
 data$photoperiod <- env_data_photoperiod$photoperiod
 data$R <- inverse_distance(data, env_data_R, metadata,p,"R")
 data$S <- inverse_distance(data, env_data_S, metadata,p,"S")
