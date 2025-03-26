@@ -69,5 +69,14 @@ data_temp <- lapply(data_list, function(x) {
 data <- plyr::ldply(data_temp, data.frame)
 
 
+
+# calculate 'downstream_migration'
+speed_threshold <- 0.01
+data$downstream_migration <- (data$downstream==TRUE & data$speed_m_s >= speed_threshold)# | (data$downstream==TRUE & !(lag(data$migration_speed) >= 30*data$migration_speed)) | (data$downstream==TRUE & !(lead(data$migration_speed) <= 30*data$migration_speed))
+data$downstream_migration[data$downstream==TRUE & (lead(data$speed_m_s)*10 <= data$speed_m_s)] <- FALSE
+data$downstream_migration <- ifelse((data$downstream==TRUE & (lag(data$migration_speed) >= 30*data$migration_speed)), FALSE, TRUE)
+
+
+
 # save the data
 write.csv(data, './data/interim/migration.csv')

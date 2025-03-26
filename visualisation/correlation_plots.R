@@ -2,8 +2,10 @@ data_filter <- read_csv('./data/interim/migration_env_filter.csv', show_col_type
 
 # CORRELATION PLOT
 # Tw
-p <- ggplot(data_filter, aes(Tw, speed_m_s))+
-geom_point(shape = 16, size = 5)+ geom_smooth(method=lm, size = 2)+
+p <- ggplot()+
+geom_point(aes(Tw, speed_m_s, colour = downstream_migration),data=data_filter, shape = 16, size = 5)+
+#scale_color_manual(values = c(FALSE = "red",TRUE =  "green"))+
+#geom_smooth(method=lm, size = 2)+
 theme(
 axis.line = element_line(colour = "black"),
 axis.text.x = element_text(size = 20, colour = "black", angle=90),
@@ -49,8 +51,8 @@ d1 <- d1 +
 #ggsave('./figures/correlations/delta_watertemperature.png')
 
 # Q
-p1 <- ggplot(data_filter, aes(Q, downstream_migration))+
-geom_point(shape = 16, size = 5)+
+p1 <- ggplot(data_filter)+
+geom_point(aes(Q, downstream_migration, colour= downstream_migration), shape = 16, size = 5)+
 theme(
 axis.line = element_line(colour = "black"),
 axis.text.x = element_text(size = 20, colour = "black", angle=90),
@@ -60,8 +62,9 @@ axis.title.y = element_text(size = 25))+
 labs(x = "Debiet [m^3/s]",
     y = "migration")
 
-p1 <- ggplot(data_filter, aes(Q, speed_m_s))+
-geom_point(shape = 16, size = 5)+ geom_smooth(method=lm, size = 2)+
+p1 <- ggplot(data_filter)+
+geom_point(aes(Q, migration_speed, colour=downstream_migration), shape = 16, size = 5)+
+#geom_smooth(method=lm, size = 2)+
 theme(
 axis.line = element_line(colour = "black"),
 axis.text.x = element_text(size = 20, colour = "black", angle=90),

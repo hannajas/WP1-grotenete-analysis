@@ -53,3 +53,10 @@ data %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 # distance on passing time for all eels
+
+
+
+#plot density plot of migration_speed
+data %>%
+  ggplot(aes(x = speed_m_s, color = downstream_migration, fill = downstream_migration)) +
+  geom_density(alpha = 0.7)

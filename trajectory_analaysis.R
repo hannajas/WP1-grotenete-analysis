@@ -49,12 +49,12 @@ traj <- as.ltraj(xy,data$middledate, id) #traj[[1]]$dist --> 21 object for which
 ############################################################################################
 # LAVIELLE ANALYSIS
 data_list <- split(data, f = data$tag_serial_number)
-pdf("./figures/2019_grotenete_migration_Lavielle.pdf") # Create pdf
+pdf("./figures/2019_grotenete_migration_Lavielle_K=4_dist_meanvar.pdf") # Create pdf
 for(a in 1:length(traj)){
   if (nrow(traj[[a]]) > 1) {
     one_traj <- redisltraj(traj[a], u = 60*15, type = "time")# INTERPOLATE to a regular trajectory
-    one_traj[[1]]$dist <- log(one_traj[[1]]$dist)
-    lav <- lavielle(one_traj, Lmin=2, Kmax=8, type="mean")
+    #one_traj[[1]]$dist <- log(one_traj[[1]]$dist)
+    lav <- lavielle(one_traj, Lmin=2, Kmax=8, type="meanvar")
     kk <- findpath(lav,4,plotit = TRUE)
     #data_temp <- data %>% filter(tag_serial_number == data_list[[a]]$tag_serial_number[1])
     temp_oud <- c()
@@ -98,15 +98,16 @@ dev.off()
 
 ############################################################################################
 # LAVIELLE ANALYSIS - FOR ONE EEL
-data_1171749 <- data %>% filter(tag_serial_number == "1171748")
+data_1171749 <- data %>% filter(tag_serial_number == "1171749")
 #traj[[29]]$dist <- c(data_1171749$swimdistance_m[-1],NA)
-one_traj <- redisltraj(traj[1], u = 60*15, type = "time")# hoedanook wordt voor deze interpolatie gebruikgemaakt van de originele dist!
-onetraj[[1]]$dist <- log(one_traj[[3]]$dist)
+#BINNEN traj[] juiste nummer van eel trajectory invullen!
+one_traj <- redisltraj(traj[4], u = 60*15, type = "time")# hoedanook wordt voor deze interpolatie gebruikgemaakt van de originele dist!
+#one_traj[[1]]$dist <- log(one_traj[[1]]$dist)
 
 #p2 <- ggplot()+
 #  geom_point(aes(date,log(dist)),data = traj[[16]])
 
-lav <- lavielle(one_traj, Lmin=2, Kmax=8, type="mean")#traj[25]
+lav <- lavielle(one_traj, Lmin=2, Kmax=8, type="var")#traj[25]
 #the series used (lav$series) == traj[[1]] without the last (NA) value
 
 test <- chooseseg(lav)#waarom zijn y-waarden negatief??
@@ -206,16 +207,17 @@ p1 <- ggplot() +
 
 ############################################################################################
 # GUEGUEN ANALYSIS - try for 1171749
-data_1171749 <- data %>% filter(tag_serial_number == "1171749")
-traj[[4]]$dist <- data_1171749$migration_speed
-
+data_1171749 <- data %>% filter(tag_serial_number == "1294169")
+one_traj <- redisltraj(traj[23], u = 60*15, type = "time")
+#traj[[4]]$dist <- data_1171749$migration_speed
+plotltr(one_traj, "dist")
 tested.means <- seq(0, 1.5, length = 10)
 tested.sd <- seq(0.05, 0.1, length = 10)
 
 limod <- as.list(paste("dnorm(dist, mean =",tested.means, ", sd = ",tested.sd,")"))
-mod <- modpartltraj(traj[4], limod)
+mod <- modpartltraj(one_traj, limod)
 bestpartmod(mod)
-pm <- partmod.ltraj(traj[4], 4, mod)
+pm <- partmod.ltraj(one_traj, 2, mod)
 
 data_1171749 <- allocate_segments(pm$ltraj,data_1171749)
 
