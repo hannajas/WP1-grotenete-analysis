@@ -1,3 +1,4 @@
+# function to interpolate all environmental variables
 concat_all_env_vars <- function(telemetry_data, data_type, metadata) {
     metadata_filter <- filter(metadata, metadata$type == data_type)
     #print(paste(metadata_filter))

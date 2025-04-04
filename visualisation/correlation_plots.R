@@ -1,3 +1,6 @@
+library(tidyverse)
+library(dplyr)
+library(ragg)
 data_filter <- read_csv('./data/interim/migration_env_filter.csv', show_col_types = FALSE)
 
 # CORRELATION PLOT
@@ -260,3 +263,64 @@ axis.text.y = element_text(size = 25, colour = "black"),
 axis.title.y = element_text(size = 25))+
 labs(x = "Debiet [m^3/s]",
     y = "speed_m_s")
+
+
+
+
+###########################################################################################################################
+# Correlation between turbidity and river flow
+rup02e_SF_1066_turb <- read_csv('./data/interim/processed/rup02e_SF_1066_turb.csv', show_col_types = FALSE)
+
+rup00a_1066_Q <- read_csv('./data/interim/processed/rup00a_1066_Q.csv', show_col_types = FALSE)
+turb_Q_rup <- left_join(rup02e_SF_1066_turb, rup00a_1066_Q, "Timestamp")
+g <- ggplot(turb_Q_rup)+
+theme(axis.text.x = element_text(size = 14, colour = "black", angle=90),
+axis.title.x=element_text(size=16),axis.title.y=element_text(size=16),
+axis.text.y = element_text(size = 14),
+axis.text.y.right = element_text(color="blue"))+
+geom_line(aes(Timestamp, Value.x), linewidth = 1)+
+geom_point(aes(Timestamp, Value.y*1), colour = "blue", size = 6)+
+scale_y_continuous(sec.axis = sec_axis(~. /1, name = "Discharge (m³/s)"))+
+theme(plot.title = element_text(lineheight=.8, face="bold", size=20))+
+#labs(title = id_unique[a])+
+ylab("Turbidity (NTU)")+
+xlab("Date")
+print(g)
+ggsave(g, filename = "C:/Code/WP1-grotenete-analysis/figures/Q_en_turb.png",height = 10, width = 20)
+
+
+
+ggplot(Q_turb_rup, aes(Q, Turbidity))+
+geom_point(shape = 16, size = 5)+
+theme(
+axis.line = element_line(colour = "black"),
+axis.text.x = element_text(size = 20, colour = "black", angle=90),
+axis.title.x = element_text(size = 25),
+axis.text.y = element_text(size = 25, colour = "black"),
+axis.title.y = element_text(size = 25))+
+labs(x = "Q [m^3/s]",
+    y = "Turbidity [NTU]")
+
+
+# correlations between environmental variables
+Q_turb_rup <- rup00a_1066_Q %>%
+    rename(Q = Value)
+variables <- c("rup02e_SF_1066_turb", "rup02e_SF_1066_S","rup02e_SF_1066_O","rup02e_SF_1066_Tw", "P04_027_R")
+for (i in variables) {
+    env_data <- read_csv(paste0('./data/interim/processed/', i, '.csv'), show_col_types = FALSE)
+    Q_turb_rup$temp <- unlist(lapply(1:nrow(Q_turb_rup), function(a) {
+    mean(env_data$Value[env_data$Timestamp >= Q_turb_rup$Timestamp[a] & env_data$Timestamp < Q_turb_rup$Timestamp[a]+ddays(x = 1)])
+    }))
+    names(Q_turb_rup)[dim(Q_turb_rup)[2]] <- i
+}
+
+
+# pair plot
+p <- Q_turb_rup %>%
+  select(Q,variables) %>%
+  pairs
+
+#correlation matrix
+p <- Q_turb_rup %>%
+  select(Q,variables) %>%
+  GGally::ggpairs()

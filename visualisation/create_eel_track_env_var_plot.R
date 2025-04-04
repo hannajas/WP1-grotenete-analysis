@@ -253,6 +253,8 @@ for (i in 1:length(mydfnew.split.eel)){
 
 dev.off()
 
+
+
 ###########################################################################################################
 # PDF with Q of one location
 # migration data in the right format for adehabitat package
@@ -368,6 +370,72 @@ for(a in 1:length(traj)){
 }
 
 dev.off()
+
+###########################################################################################################
+# PDF with turbidity
+rup02e_SF_1066_turb <- read_csv('./data/raw/turbidity/rup02e_SF_1066_turb.csv', show_col_types = FALSE) %>%
+    rename(
+        date = Timestamp
+    )
+
+pdf("./figures/2019_grotenete_migration_rup02e_SF_1066_turb.pdf") # Create pdf
+for(a in 1:length(traj)){
+  if (nrow(traj[[a]]) > 1) {
+    one_traj <- redisltraj(traj[a], u = 60*5, type = "time")
+    temp_traj <- do.call(rbind.data.frame, one_traj) %>%
+        left_join(rup02e_SF_1066_turb,"date")
+    temp_traj$cum_dist <- cumsum(temp_traj$dist)
+    g <- ggplot(temp_traj)+
+    theme(axis.text.x = element_text(size = 14, colour = "black", angle=90),
+    axis.title.x=element_text(size=16),axis.title.y=element_text(size=16),
+    axis.text.y = element_text(size = 14),
+    axis.text.y.right = element_text(color="blue"))+
+    geom_line(aes(date, cum_dist), linewidth = 1)+
+    geom_line(aes(date, Value*555), colour = "blue", linewidth = 1)+
+    scale_y_continuous(sec.axis = sec_axis(~. /555, name = "Turbidity (NTU)"))+
+    theme(plot.title = element_text(lineheight=.8, face="bold", size=20))+
+    labs(title = id_unique[a])+
+    ylab("Distance (m)")+
+    xlab("Date")
+    print(g)
+    }
+}
+
+dev.off()
+
+###########################################################################################################
+# PDF with O_diss
+
+rup02e_SF_1066_O <- read_csv('./data/raw/oxygen/rup02e_SF_1066_O.csv', show_col_types = FALSE) %>%
+    rename(
+        date = Timestamp
+    )
+
+pdf("./figures/2019_grotenete_migration_rup02e_SF_1066_O.pdf") # Create pdf
+for(a in 1:length(traj)){
+  if (nrow(traj[[a]]) > 1) {
+    one_traj <- redisltraj(traj[a], u = 60*5, type = "time")
+    temp_traj <- do.call(rbind.data.frame, one_traj) %>%
+        left_join(rup02e_SF_1066_O,"date")
+    temp_traj$cum_dist <- cumsum(temp_traj$dist)
+    g <- ggplot(temp_traj)+
+    theme(axis.text.x = element_text(size = 14, colour = "black", angle=90),
+    axis.title.x=element_text(size=16),axis.title.y=element_text(size=16),
+    axis.text.y = element_text(size = 14),
+    axis.text.y.right = element_text(color="blue"))+
+    geom_line(aes(date, cum_dist), linewidth = 1)+
+    geom_line(aes(date, Value*5555), colour = "blue", linewidth = 1)+
+    scale_y_continuous(sec.axis = sec_axis(~. /5555, name = "Turbidity (NTU)"))+
+    theme(plot.title = element_text(lineheight=.8, face="bold", size=20))+
+    labs(title = id_unique[a])+
+    ylab("Distance (m)")+
+    xlab("Date")
+    print(g)
+    }
+}
+
+dev.off()
+
 
 ###########################################################################################################
 # pdf with Q,R and Tw
