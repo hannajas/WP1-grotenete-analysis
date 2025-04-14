@@ -3,6 +3,10 @@ library(patchwork)
 library(lubridate)
 
 # read raw data
+metadata <- read_csv('./data/raw/metadata/Metadata.csv', show_col_types = FALSE)
+metadata_Tw <- filter(metadata, metadata$type == "Tw")
+n <- dim(metadata_Tw)[1]
+
 for (i in 1:n) {
     path <- paste('./data/raw/temperature/',metadata_Tw$name[i],'_Tw.csv', sep ="")
     temp <- read_csv(path)
@@ -20,6 +24,9 @@ L07_077_Tw$Value[begin2:eind2] <- NA
 L07_077_Tw$Value <- as.numeric(L07_077_Tw$Value)
 #L07_077_Tw$Timestamp <- ymd_hms(L07_077_Tw$Timestamp)
 #rup02e_SF_1066_Tw$Timestamp <- ymd_hms(rup02e_SF_1066_Tw$Timestamp)
+
+# remove "...2" column out of zes24a_SF_1066_Tw.csv
+zes24a_SF_1066_Tw <- zes24a_SF_1066_Tw[,-c(2)]
 
 for (i in 1:n) {
     path <- paste('./data/interim/processed/',metadata_Tw$name[i],'_Tw.csv', sep ="")

@@ -8,8 +8,13 @@ library(sp)
 library(sf)
 #import .txt file in R with function:
 file_path <- "./data/raw/cross_sections/240402_TAW_POS_multibeam_RUP.txt"
-data <- read.table(file_path, col.names = c("x","y","depth"))
+file_path_s <- "./data/raw/cross_sections/singlebeam_RUP.txt"
+
+data <- read.table(file_path_s, col.names = c("x","y","depth"))
 data_f <- data[data$x > 149310.72 & data$x < 149500.33,]
+#data <- read.table(file_path, col.names = c("x","y","depth"))
+#data_f <- data[data$x > 149310.72 & data$x < 149500.33,]
+
 #lambert_sf <- st_as_sf(data_f, coords = c("x", "y"), crs = 31370)
 #latlon_sf <- st_transform(lambert_sf, crs = 4326)
 #latlon_coords <- st_coordinates(latlon_sf)
@@ -19,10 +24,10 @@ data_bat <- as.bathy(data_f)
 #y_2 <- 4.360276
 #x_1 <- 51.083929
 #y_1 <- 4.359135
-x_2 <- 149430.86
-x_1 <- 149324.55
-y_2 <- 197271.06
-y_1 <- 197085.56
+x_2 <- 149420.1
+x_1 <- 149298.54
+y_2 <- 197294.99
+y_1 <- 197084.59
 test <- get.transect(data_bat,x_1,y_1,x_2,y_2, distance = TRUE)
 ind <- c()
 for (i in 1:length(test$lon)){
@@ -50,3 +55,7 @@ theme_minimal()
 
 #Je kan enkel het profiel ONDER het water verkrijgen zo, als op moment van 
 # meting het peil laag was --> weinig info over snleheid bij hoge peilen....
+ggplot(data_cs, aes(x = x, y = depth)) +
+  geom_line() +
+  theme_minimal()
+#ggsave("./figures/cross_sections/multibeam_RUP.png")
