@@ -68,7 +68,7 @@ for (k in 1:length(mydfnew.split.eel)){
     temp_k$type <- "distribution"
     #concat to previous temp data.frame
     distribution <- rbind(distribution, temp_k)
-    id <- which(temp_k$Timestamp %in% round_date(mydfnew.split.eel[[k]]$departure,unit="day"))
+    id <- which(temp_k$Timestamp %in% round_date(mydfnew.split.eel[[k]]$arrival,unit="day"))
     sample <- temp_k[id,]
     sample$type <- "sample"
     distribution <- rbind(distribution, sample)
