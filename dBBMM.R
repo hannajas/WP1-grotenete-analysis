@@ -3,6 +3,7 @@ library("actel")
 library(tidyverse)
 library(RSP)
 library(dplyr)
+library(sp)
 
 #Data
 data <- read_csv('./data/interim/migration_env_filter.csv', show_col_types = FALSE)
@@ -133,7 +134,18 @@ explore_out <- explore(tz="UTC",GUI="never")
 ###########################################################################
 # RSP
 # load t.layer
+# add Lambert coordiates to spatial
 
+cord.dec <- SpatialPoints(spatial[,c("Longitude","Latitude")],proj4string=CRS("+proj=longlat"))
+lambert <- spTransform(cord.dec,CRS("EPSG:31370"))
+spatial[,c("X","Y")] <- coordinates(lambert)
+DEM <- raster("C:/Users/hjaspaer/OneDrive - UGent/Documents/Werkpakkket I/GIS/raster_water_grote_nete.tif")
+study_area <- terra::rast("C:/Users/hjaspaer/OneDrive - UGent/Documents/Werkpakkket I/GIS/raster_water_grote_nete.tif")
+base.raster <- shapeToRaster("./data/raw/shape/Grote_nete_water.shp", size =100, coord.x = "X", coord.y="Y", type = "water")
+raster::plot(study_area, col ="blue")#niets miss met .tif file R plot het meteen naar hij verlaagt de resolutie
+#resolutie vehogen miss in raster package proberen --> DPI verhoger
+#hv plot plotly in python dynaische plot ste mkane
+t.layer <- transitionLayer(study_area, directions = 16)
 # run "runRSP" 
 # input = output of residency, migration of explore (actel package)
 test <- runRSP(explore_out, coord.x="Longitude", coord.y="Latitude")
