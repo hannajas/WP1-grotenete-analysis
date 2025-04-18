@@ -149,3 +149,4 @@ t.layer <- transitionLayer(study_area, directions = 16)
 # run "runRSP" 
 # input = output of residency, migration of explore (actel package)
 test <- runRSP(explore_out, coord.x="Longitude", coord.y="Latitude")
+test
