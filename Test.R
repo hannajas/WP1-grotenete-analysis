@@ -1,3 +1,6 @@
+a <- gdistance::shortestPath(transition, A, B, output = "SpatialLines")
+
+
 # plot the speed of the fish for each segment
 pdf("./figures/Downstream_segments_Tw_Q.pdf") # Create pdf
 for (i in 2:length(seq_af)-1){
