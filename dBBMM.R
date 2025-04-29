@@ -3,7 +3,7 @@ library("actel")
 library(tidyverse)
 library(RSP)
 library(dplyr)
-library(sp)
+library(sf)
 
 #######################################################################################################################################################
 #Detections (LongLat)
@@ -71,14 +71,15 @@ spatial <- rbind(deployments_raw, release)
 #    rename(Station.name = ...1)
 spatial$Array <- "A1"
 spatial$Section <- "River"
-spatial[spatial$Station.name =="bn-2","Latitude"]<-51.117187
-spatial[spatial$Station.name =="gn-11","Latitude"]<-51.095885
-spatial[spatial$Station.name =="gn-11","Longitude"]<-4.957227
+spatial[spatial$Station.name =="bn-2","Latitude"] <- 51.117187
+spatial[spatial$Station.name =="gn-14","Longitude"] <- 4.996392
+spatial[spatial$Station.name =="gn-10","Latitude"] <- 51.091483
+spatial[spatial$Station.name =="gn-10","Longitude"] <- 4.945819
+
 
 # add Lambert coordiates to spatial
 cord.dec <- SpatialPoints(spatial[,c("Longitude","Latitude")],proj4string=CRS("+proj=longlat"))
 lambert <- spTransform(cord.dec,CRS("EPSG:31370"))
-spatial <- loadSpatial()
 spatial[,c("X","Y")] <- coordinates(lambert)
 
 write_csv(spatial, './spatial.csv')
@@ -144,12 +145,12 @@ explore_out <- explore(tz="UTC",GUI="never", max.interval = 600)
 # RSP
 # (The coordinates of your receivers and release sites in the same coordinate system as the shapefile.)
 
-#raster in Lambert (andere optie raster in LongLat en receiver coordinaten OOK)
-base.raster_lamb <- shapeToRaster("./data/raw/shape/Grote_nete_water.shp", size =5, coord.x = "X", coord.y="Y", type = "water")
-base.raster_longlat <- terra::rast("C:/Users/hjaspaer/OneDrive - UGent/Documents/Werkpakkket I/GIS/raster_water_grote_nete_longlat.tif")
+#raster
+#base.raster_lamb <- shapeToRaster("./data/raw/shape/Grote_nete_water.shp", size =5, coord.x = "X", coord.y="Y", type = "water")
+base.raster_longlat <- terra::rast("C:/Users/hjaspaer/OneDrive - UGent/Documents/Werkpakkket I/GIS/raster_water_extended_longlat.tif")
 
 #export a raster to .tif with terra
-terra::writeRaster(base.raster, "./raster_5m.tif", overwrite=TRUE)
+#terra::writeRaster(base.raster, "./raster_5m.tif", overwrite=TRUE)
 #TO MANY RECEIVERS ON THE LAND!Warning: Stations starting with 'ws' AND 'gn-11', 'gn-10', 'bn-2', 'bn-Walem', 'ak-41', 's-4a','s-8','s-9','s-6' are not placed in water!
 
 #DUS ws detecties uit detecties knippen
@@ -158,17 +159,35 @@ terra::writeRaster(base.raster, "./raster_5m.tif", overwrite=TRUE)
 
 raster::plot(base.raster_longlat, col ="blue")#niets miss met .tif file R plot het meteen naar hij verlaagt de resolutie
 #resolutie figuur verhogen miss in raster package proberen --> DPI verhoger
-#hv plot plotly in python dynamische plot ste mkane
+#hv plot plotly in python dynamische plot stemkane
+
+#check whether all receivers are in the raster
+sp_points <- terra::vect(spatial, geom = c("Longitude", "Latitude"), 
+                          crs = terra::crs(base.raster_longlat))
+check <- terra::extract(base.raster_longlat, sp_points)
 #t.layer --< te groot om in te laden via load()
 
 t.layer <- transitionLayer(base.raster_longlat, directions = 16)
-t.layer_lambert <- transitionLayer(base.raster_lamb, directions = 16)
+#t.layer_lambert <- transitionLayer(base.raster_lamb, directions = 16)
+
 ######################################################################################################################
 # run "runRSP" 
 # input = output of residency, migration of explore (actel package)
-#MOET MISS IN LAMBERT!
 runRSP_out <- runRSP(explore_out, t.layer=t.layer, coord.x="Longitude", coord.y="Latitude",time.step=0.5,
                     min.time = 1, max.time = 600, verbose =TRUE)
+#heb ik als output hiervan al regular tracks?
+#returns list of RSP tracks for each transmitter detected
+#aim of this RSP package is to create BBMMs as input for further statististical analysis
+
+#save(runRSP_out, file = "./data/analysis/runRSP_out.RData")
+
+
+
+
+
+
+
+
 
 
 
@@ -204,8 +223,8 @@ df.track <- track.aux[[1]]
 #function.recipient <- RSP:::calcRSP(df.track = df.track, tz = tz, distance = distance, verbose = TRUE, min.time = min.time,
 #                                    time.step = time.step, transition = transition, er.ad = er.ad, path.list = path.list)
 i<-3
-A <- with(df.track, c(Longitude[40 - 1], Latitude[40 - 1])) #gn-13
-B <- with(df.track, c(Longitude[600], Latitude[600])) #gn-11 AANPASSIGEN IN LIJN 75 EN 76 STROMEN NIET DOOR TOT HIER????
+A <- with(df.track, c(Longitude[i - 1], Latitude[i - 1])) #gn-13
+B <- with(df.track, c(Longitude[i], Latitude[i])) #gn-11 AANPASSIGEN IN LIJN 75 EN 76 STROMEN NIET DOOR TOT HIER????
 test <- gdistance::shortestPath(transition, A, B, output = "SpatialLines")
 p1 <- lines(test, col = "red", lwd = 2)
 #error in gdistance::shortestPath! (graph.adjacency works), waarschijnlijk in igraph::get.shortest.paths
