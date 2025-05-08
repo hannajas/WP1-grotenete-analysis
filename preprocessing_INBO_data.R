@@ -76,7 +76,17 @@ data$downstream_migration <- (data$downstream==TRUE & data$speed_m_s >= speed_th
 data$downstream_migration[data$downstream==TRUE & (lead(data$speed_m_s)*10 <= data$speed_m_s)] <- FALSE
 data$downstream_migration <- ifelse((data$downstream==TRUE & (lag(data$migration_speed) >= 30*data$migration_speed)), FALSE, TRUE)
 
-
+#add column to devide the study area in a tidal, transition and non-tidal area
+grenswaardes_distance_to_source <- c(28833.23349, 43106.96)#boundaries between de different zones (looked at receivers distance_to_source and then ruler in QGIS)
+data$zone <- "transition"
+data$zone[data$distance_to_source_m < grenswaardes_distance_to_source[1]] <- "non-tidal"
+data$zone[data$distance_to_source_m > grenswaardes_distance_to_source[2]] <- "tidal"
 
 # save the data
 write.csv(data, './data/interim/migration.csv')
+
+
+# filter WS away
+data_filter <- filter(data, !startsWith(data$station_name, "ws-")) #+- 62 waarden uitgelaten
+
+write.csv(data_filter, './data/interim/migration_env_filter.csv')

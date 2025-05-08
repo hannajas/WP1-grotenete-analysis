@@ -110,3 +110,15 @@ for (i in 1:length(ts_id)){
     path <- paste('./data/raw/oxygen/', name[i], '_O.csv',sep ="")
     write.csv(oxygen, path)
 }
+
+
+
+######################################################################
+#tides
+name <- c("bnt07a_1066", "bnt03a_1066", "bnt01c_1066", "zes28a_1066", "zes21a_1066", "zes14a_1066", "zes10a_1066", "zes01a_1066")
+ts_id <- c("54829010","54289010", "114027010","54499010", "53995010", "54612010", "54942010","54581010")#ts_id_getij <- read.csv("./data/tij_all_identifiers.txt")
+for (i in 1:length(ts_id)){
+    tide <- get_timeseries_tsid(ts_id[i], from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+    path <- paste('./data/raw/tide/', name[i], '_tij.csv',sep ="")
+    write.csv(tide, path)
+}

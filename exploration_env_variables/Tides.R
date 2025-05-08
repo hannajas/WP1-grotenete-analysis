@@ -1,0 +1,90 @@
+library(wateRinfo)
+library(tidyr)
+library(tidyverse)
+library(patchwork)
+#Bij alle tidal measurement data:
+#bnt07a-1066, bnt03a-1066, bnt01c-1066, BS-RUP-1096, zes28a-1066, zes21a-1066, zes14a-1066, zes10a-1066, zen01a-1066
+
+#Tij bij kunnen zetten
+#Tij data:
+#niet BS-RUP-1096, rest wel
+
+#enkel tidal data inladen
+
+# read metadata and rw data
+metadata <- read_csv('./data/raw/metadata/Metadata.csv', show_col_types = FALSE)
+metadata_tij <- filter(metadata, metadata$type == "tij")
+n <- dim(metadata_tij)[1]
+
+for (i in 1:n) {
+    path <- paste('./data/raw/tide/',metadata_tij$name[i],'_tij.csv', sep ="")
+    temp <- read_csv(path)
+    temp$tij <- "HW"
+    even_indexes<-seq(2,length(temp$Value),2)
+    oneven_indexes<-seq(1,length(temp$Value)-1,2)
+    if ((temp$Value[1] - temp$Value[2]) > 0) {
+    temp$tij[even_indexes] <- "LW"
+    } else {
+    temp$tij[oneven_indexes] <- "LW"
+    }
+    temp$interval <- temp$Timestamp %--% lead(temp$Timestamp)
+    assign(paste(metadata_tij$name[i],'_tij', sep =""), temp)
+}
+
+for (i in 1:n) {
+    path <- paste('./data/interim/processed/',metadata_tij$name[i],'_tij.csv', sep ="")
+    write.csv(get(paste(metadata_tij$name[i],'_tij', sep ="")), path)
+}
+
+###########################################################################################################
+#add two columns to the data_eels dataframe: tide_arrival, tide_departure
+data_filter <- read_csv('./data/interim/migration_env_filter.csv', show_col_types = FALSE)
+data_filter_tij <- data_filter %>%
+  mutate(tide_arrival = NA,
+         tide_departure = NA,
+         tidetime_arr = NA,
+         tidetime_dep = NA) %>%
+         filter(zone == "tidal")
+for(i in 1:nrow(data_filter_tij)){
+# choose the right tidal data
+    ind <- which.min(abs(data_filter_tij$distance_to_source_m[i] - metadata_tij$distance_to_source))
+    closest <- get(paste(metadata_tij$name[ind],'_tij', sep =""))
+#inverse dinstance rekenen met de tijdstippen van de tijdata  
+    ind_arr <- which(data_filter_tij$arrival[i] %within% closest$interval)
+    ind_dep <- which(data_filter_tij$departure[i] %within% closest$interval)
+    data_filter_tij$tidetime_arr[i] <- closest$Timestamp[ind_arr]
+    data_filter_tij$tidetime_dep[i] <- closest$Timestamp[ind_dep]
+    if (closest$tij[ind_arr] == "HW"){
+        data_filter_tij$tide_arrival[i] <- "ebb"
+        data_filter_tij$tidetime_arr[i] <- interval(start = closest$Timestamp[ind_arr],end = data_filter_tij$arrival[i])
+        } else {
+        data_filter_tij$tide_arrival[i] <- "flood"
+        data_filter_tij$tidetime_arr[i] <- interval(start = closest$Timestamp[ind_arr-1],end = data_filter_tij$arrival[i])
+
+    }
+    if (closest$tij[ind_dep] == "HW"){
+        data_filter_tij$tide_departure[i] <- "ebb"
+        data_filter_tij$tidetime_dep[i] <- interval(start = closest$Timestamp[ind_dep],end = data_filter_tij$departure[i])
+        } else {
+        data_filter_tij$tide_departure[i] <- "flood"
+        data_filter_tij$tidetime_dep[i] <- interval(start = closest$Timestamp[ind_dep-1],end = data_filter_tij$departure[i])
+    }
+}
+
+
+#van HW --> HW is +- 12u dus verdeling per halfuur ongeveer
+p1 <- ggplot(data_filter_tij, aes(x=hour(tidetime_arr)))+#hier hoever van hoog en laag tij
+    geom_bar(aes(fill=tide_arrival),width = )+
+    coord_radial(r.axis.inside=TRUE, expand = FALSE)+
+    labs(title = "Arrivals at receicers")+
+    theme(legend.position = "none")+#axis.title.x = element_text(size = 16)
+    xlab("hours after high water")
+
+p2 <- ggplot(data_filter_tij, aes(x=hour(tidetime_dep)))+#hier hoever van hoog en laag tij
+geom_bar(aes(fill=tide_departure))+
+coord_radial(r.axis.inside=TRUE, expand = FALSE)+
+labs(title = "Departures at receicers")+
+theme(legend.position = "right")+#axis.title.x = element_text(size = 16)
+xlab("hours after high water")
+print(p1 | p2)
+ggsave("./figures/Tide/tidal_zone.png")

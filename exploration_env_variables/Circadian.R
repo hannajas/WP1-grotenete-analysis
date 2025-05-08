@@ -50,17 +50,20 @@ p1 <- ggplot(data_eels, aes(x=hour(arrival)))+
     geom_bar(aes(fill=arrival_circadian))+
     coord_radial(r.axis.inside=TRUE, expand = FALSE)+
     labs(title = "Arrivals at receicers")+#remove legend
-    theme(legend.position = "none")
+    theme(legend.position = "none")+
+    facet_wrap(~zone)
 # departures
 p2 <- ggplot(data_eels, aes(x=hour(departure)))+
     geom_bar(aes(fill=departure_circadian))+
     coord_radial(r.axis.inside=TRUE, expand = FALSE)+
     labs(title = "Departures at receicers")+#add a legend to describe the polar axis
     theme(legend.position = "bottom") +
-    guides(fill=guide_legend(title="Circadian phase"))
+    guides(fill=guide_legend(title="Circadian phase"))+
+    facet_wrap(~zone)
 print(p1 / p2)
 # meeste arrivals en departures tussen 18u en 21u
 
+#non-tidal arrivals
 
 
 #weight the counts on the duration of each phase

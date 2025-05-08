@@ -324,3 +324,20 @@ p <- Q_turb_rup %>%
 p <- Q_turb_rup %>%
   select(Q,variables) %>%
   GGally::ggpairs()
+
+
+
+##############################################################################################
+#correlation between raw env data
+env_data <- read_csv('./data/interim/processed/rup02e_SF_1066_turb.csv', show_col_types = FALSE) %>%
+    rename(rup02e_SF_1066_turb = Value)
+
+variables <- c("rup02e_SF_1066_S","rup02e_SF_1066_O","rup02e_SF_1066_Tw")
+for (i in variables) {
+    env_data_temp <- read_csv(paste0('./data/interim/processed/', i, '.csv'), show_col_types = FALSE)
+    env_data$temp <- env_data_temp$Value
+    names(env_data)[dim(env_data)[2]] <- i
+}
+p <- env_data %>%
+dplyr::select(rup02e_SF_1066_turb, variables) %>%
+GGally::ggpairs()
