@@ -4,6 +4,7 @@ library(tidyverse)
 library(RSP)
 library(dplyr)
 library(sf)
+library(mapview)
 
 #######################################################################################################################################################
 #Detections (LongLat)
@@ -42,48 +43,52 @@ movements <- detections %>%
     rename(Timestamp = date_time)
 movements$CodeSpace <- extractCodeSpaces(movements$acoustic_tag_id)
 movements$Signal <- extractSignals(movements$acoustic_tag_id)
-write_csv(movements, './detections/detections.csv')
+write_csv(movements, './data/actel/detections/detections.csv')
 
 
 
 ###########################################################################
 # Spatial (LongLat + Lambert)
-deployments_raw <- read_csv('./data/raw/deployments.csv', show_col_types = FALSE) %>%
+deployments_raw <- read_csv('./data/interim/deployments_projected.csv', show_col_types = FALSE) %>%
 #filter op zelfde stationnames als in detections.csv
     filter(station_name %in% stations) %>%
-    rename(Latitude = deploy_latitude,
-           Longitude = deploy_longitude,
-           Station.name = station_name) %>%
+    rename(Station.name = station_name,
+           Latitude = deploy_latitude,
+           Longitude = deploy_longitude) %>%
            select(-c("...1"))
 deployments_raw$Type <- "Hydrophone"
+#no range column because the default of 500m is used here
 
 release <- data.frame(
-  acoustic_project_code = c("2019_Grotenete","2019_Grotenete","2019_Grotenete"),
+  animal_project_code = c("2019_Grotenete","2019_Grotenete","2019_Grotenete"),
   Station.name = c("rel_grotenete1", "rel_grotenete2", "rel_grotenete3"),
-  Latitude = c(51.144779, 51.139997, 51.138881),
+  X = NA,
+  Y = NA,
   Longitude = c(5.003906, 4.997392, 4.996931),
+  Latitude = c(51.144779, 51.139997, 51.138881),
   Type = c("Release", "Release", "Release")
 )
 
+cord.dec <- st_as_sf(release[,c("Longitude","Latitude")],crs=4326, coords = c("Longitude","Latitude"))
+lambert <- st_transform(cord.dec, crs=31370)
+release[,c("X","Y")] <- st_coordinates(lambert)
+
 spatial <- rbind(deployments_raw, release)
+
 #spatial <- left_join(distance_matrix,spatial, by=c("...1"="Station.name")) %>%
 #    select(-all_of(c(stations,"rel_grotenete1","rel_grotenete2","rel_grotenete3"))) %>%
 #    rename(Station.name = ...1)
 spatial$Array <- "A1"
 spatial$Section <- "River"
-spatial[spatial$Station.name =="bn-2","Latitude"] <- 51.117187
-spatial[spatial$Station.name =="gn-14","Longitude"] <- 4.996392
-spatial[spatial$Station.name =="gn-10","Latitude"] <- 51.091483
-spatial[spatial$Station.name =="gn-10","Longitude"] <- 4.945819
+#handmatige aanpassingen niet meer nodig door projectie van receivers op tallijn
+#spatial[spatial$Station.name =="bn-2","Latitude"] <- 51.117187
+#spatial[spatial$Station.name =="gn-14","Longitude"] <- 4.996392
+#spatial[spatial$Station.name =="gn-10","Latitude"] <- 51.091483
+#spatial[spatial$Station.name =="gn-10","Longitude"] <- 4.945819
 
 
-# add Lambert coordiates to spatial
-cord.dec <- SpatialPoints(spatial[,c("Longitude","Latitude")],proj4string=CRS("+proj=longlat"))
-lambert <- spTransform(cord.dec,CRS("EPSG:31370"))
-spatial[,c("X","Y")] <- coordinates(lambert)
-
+#write_csv(spatial, './data/actel/spatial.csv')
 write_csv(spatial, './spatial.csv')
-
 
 
 ###########################################################################
@@ -91,7 +96,7 @@ write_csv(spatial, './spatial.csv')
 #load distance matrix
 distance_matrix <- read_csv('./data/raw/distancematrix_2019_grotenete.csv', show_col_types = FALSE)
 #rename the distance matrix
-spatial_standard_name <- loadSpatial()
+spatial_standard_name <- loadSpatial('./data/actel/spatial.csv')
 distance_matrix <- distance_matrix %>%
     filter(...1 %in% stations_rel)
 distance_matrix <- distance_matrix %>%
@@ -104,7 +109,7 @@ colnames(distance_matrix) <- c("...1",spatial_standard_name$Standard.name[match(
   colnames(distance_matrix)[-1], spatial_standard_name$Station.name
 )])
 #nu geeft ...1 de kolomnaam NA
-write_csv(distance_matrix, './distances.csv')
+write_csv(distance_matrix, './data/actel/distances.csv')
 
 
 ##########################################################################
@@ -122,7 +127,7 @@ biometry$Code.space[grepl(",", biometry$Code.space)] <- unlist(map(strsplit(uniq
 biometry$Release.site <- gsub('Downstream confluent Grote Nete and Molse Nete', 'rel_grotenete1',
 gsub('Grote Nete 200 m upstream deployment gn-14','rel_grotenete2',
 gsub('Wildersedijk Grote Nete','rel_grotenete3', biometry$Release.site)))
-#write_csv(biometry, './biometrics.csv')
+write_csv(biometry, './data/actel/biometrics.csv')
 
 
 #########################################################################
@@ -131,18 +136,26 @@ deployments <- data.frame(Station.name= stations)
 deployments$Receiver <- receiver_id
 deployments$Start <- min(biometry$Release.date)
 deployments$Stop <- max(biometry$Release.date)+days(85)
-write_csv(deployments, './deployments.csv')
+write_csv(deployments, './data/actel/deployments.csv')
 
 
-
-
+test <- read_csv('./data/actel/detections.csv')
 #create an actel object
-explore_out <- explore(tz="UTC",GUI="never", max.interval = 600)
+x <-preload(spatial='./data/actel/spatial.csv',
+       detections='./data/actel/detections/detections.csv',#heeft problemen met detections.csv --> zogezegd verschillende kolomen die er niet zijn: Timestamp, Receiver, CodeSpace, Signal
+       biometrics='./data/actel/biometrics.csv',
+       deployments='./data/actel/deployments.csv',
+       distances='./data/actel/distances.csv',
+       tz = "UTC")
+
+#aangezien preload niet lukt dan toch maar csv's in deze folder
+explore_out <- explore(tz="UTC",GUI="never", max.interval = 60000, speed.method = "last to last")#save.tables.locally = TRUE
 # max time mag heel hoog --> we willen niet dat hij een nieuwe track begint
 
 
 ###########################################################################
 # RSP
+#aim of this RSP package is to create BBMMs as input for further statististical analysis
 # (The coordinates of your receivers and release sites in the same coordinate system as the shapefile.)
 
 #raster
@@ -162,10 +175,11 @@ raster::plot(base.raster_longlat, col ="blue")#niets miss met .tif file R plot h
 #hv plot plotly in python dynamische plot stemkane
 
 #check whether all receivers are in the raster
+spatial <- loadSpatial("./spatial.csv")
 sp_points <- terra::vect(spatial, geom = c("Longitude", "Latitude"), 
                           crs = terra::crs(base.raster_longlat))
 check <- terra::extract(base.raster_longlat, sp_points)
-#t.layer --< te groot om in te laden via load()
+#t.layer --> te groot om in te laden via load()
 
 t.layer <- transitionLayer(base.raster_longlat, directions = 16)
 #t.layer_lambert <- transitionLayer(base.raster_lamb, directions = 16)
@@ -173,23 +187,30 @@ t.layer <- transitionLayer(base.raster_longlat, directions = 16)
 ######################################################################################################################
 # run "runRSP" 
 # input = output of residency, migration of explore (actel package)
-runRSP_out <- runRSP(explore_out, t.layer=t.layer, coord.x="Longitude", coord.y="Latitude",time.step=0.5,
-                    min.time = 1, max.time = 600, verbose =TRUE)
-#heb ik als output hiervan al regular tracks?
+#runRSP_out_1 <- runRSP(explore_out, t.layer=t.layer, distance = 500, coord.x="Longitude", coord.y="Latitude",max.time = 6000, verbose =TRUE)
+# problem: Out of memory for some tracks
+runRSP_out_1 <- runRSP(explore_out, t.layer=t.layer, distance = 500, coord.x="Longitude", coord.y="Latitude",max.time = 6000, verbose =TRUE, tags="A69-9006-3945")
+#heb ik als output hiervan al regular tracks? (regularised by distance BUT only between 2 receivers)
 #returns list of RSP tracks for each transmitter detected
-#aim of this RSP package is to create BBMMs as input for further statististical analysis
+#high max.time --> time between 2 detections from which a new track is created (this because uncertainty increases with time between detections)
 
-#save(runRSP_out, file = "./data/analysis/runRSP_out.RData")
+#save(runRSP_out_1, file = "./data/analysis/runRSP_out_A69-9006-3945.RData")
+load("./data/analysis/runRSP_out_A69-9006-3945.RData")
 
-
-
-
-
-
-
+plotTracks(runRSP_out, base.raster = base.raster_longlat,tag ="A69-9006-3945")
+animateTracks(runRSP_out, base.raster = base.raster_longlat,tags = "A69-9006-3945")#KOST HEEL VEEL TIJD
+#ggsave("./figures/RSP/A69_9006_3945_plot.png")
 
 
 
+
+
+
+
+###################################################################################################################
+# dynBBMM
+dBBMM <- dynBBMM(input = runRSP_out_1, base.raster = base.raster_longlat,UTM = 31)
+#run een hele namiddag en nacht lang :/
 
 
 ######################################################################################################

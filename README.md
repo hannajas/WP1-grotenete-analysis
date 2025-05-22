@@ -30,13 +30,14 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 
 ### Scripts
 
+Explorative data-analysis
 * `/importing_data:` Making use of the wateRinfo package and save the data at `/raw`
 * `/exploration_env_variables:` making some figures of the environmental data and do the preprocessing
 * `/visualisation:`
     + `create_eel_track_env_var_plot.R:` Each eel its trajectory plotted together with an environmental variable
     + `Figures_for_presentations.R:` Additional figures for presenations
 Sequence of processing:
-* `calculate_speed.R:` calulate the alterantive speed by incorporating the residence times at the receivers in the swimtime
+* `preprocessing_INBO_data.R:` o.a.calulate the alterantive speed by incorporating the residence times at the receivers in the swimtime
     + `\src\calculate_speed_function.R:` function to calculate the speed for a dataframe with data from one eel
 * `link_env_variables.R:` linking the environmental variables with the telemetry data
     
@@ -47,3 +48,7 @@ Sequence of processing:
         - When datatype = "Q", there are 3 segments defined. To link environmental data with the receivers each receiver can only get information from data-point that are located whitin the same segment.
 
     Plotting correlation functions
+
+Dynamic brownian bridge models
+* `dBBMM.R`
+    + setting the actel input. Work with receiver locations projected on the river center.

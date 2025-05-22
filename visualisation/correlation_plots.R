@@ -87,6 +87,18 @@ axis.text.y = element_text(size = 25, colour = "black"),
 axis.title.y = element_text(size = 25))
 
 
+#water velocity
+p1 <- ggplot(data_filter)+
+geom_point(aes(V, migration_speed), shape = 16, size = 5)+
+#geom_smooth(method=lm, size = 2)+
+theme(
+axis.line = element_line(colour = "black"),
+axis.text.x = element_text(size = 20, colour = "black", angle=90),
+axis.title.x = element_text(size = 25),
+axis.text.y = element_text(size = 25, colour = "black"),
+axis.title.y = element_text(size = 25))
+#ggsave('./figures/correlations/water_velocity.png')
+
 #photoperiod
 d3 <- ggplot()
 d3 <- d3 + geom_point(aes(photoperiod, speed_m_s), data = data_filter, shape = 16, size = 5)

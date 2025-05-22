@@ -122,3 +122,32 @@ for (i in 1:length(ts_id)){
     path <- paste('./data/raw/tide/', name[i], '_tij.csv',sep ="")
     write.csv(tide, path)
 }
+
+
+
+
+##############################################################################
+name <- c("gnt07a_1066","gnt05a_1066", "BS_RUP_1095", "zes28a_1066", "zes01a_1066")
+ts_id <- c("67324010","69227010", "	54090010", "54493010", "56088010")
+for (i in 1:length(ts_id)){
+    tide <- get_timeseries_tsid(ts_id[i], from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+    path <- paste('./data/raw/level/', name[i], '_H.csv',sep ="")
+    write.csv(tide, path)
+}
+
+BS_RUP_1095 <- get_timeseries_tsid("54090010", from = "2019-01-01 UTC", to = "2021-02-28 UTC", datasource=4)
+write.csv(BS_RUP_1095, './data/raw/level/BS_RUP_1095_H.csv')
+
+metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
+metadata_H <- filter(metadata, metadata$type == "H")
+
+for (i in 1:nrow(metadata_H)) {
+    path <- paste('./data/raw/level/',metadata_H$name[i],'_H.csv', sep ="")
+    temp <- read_csv(path)
+    assign(paste(metadata_H$name[i],'_H', sep =""), temp)
+}
+
+for (i in 1:nrow(metadata_H)) {
+    path <- paste('./data/interim/processed/',metadata_H$name[i],'_H.csv', sep ="")
+    write.csv(get(paste(metadata_H$name[i],'_H', sep ="")), path)
+}

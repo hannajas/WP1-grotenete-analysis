@@ -17,12 +17,12 @@ data$arrival <- ymd_hms(data$arrival)
 data$departure <- ymd_hms(data$departure)
 
 # META-DATA
-metadata <- read_csv('./data/interim/Metadata.csv', show_col_types = FALSE)
+metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
 # averaging the environmental variables to fit telemetry data
 env_data_Tw <- concat_all_env_vars(data, "Tw", metadata)
 env_data_Q <- concat_all_env_vars(data, "Q", metadata)
-#divide dataframe env_data_Q by its column means
+#divide dataframe env_data_Q by its column means (to correct for wide range of Q-values)
 env_data_Q_norm <- env_data_Q/colMeans(env_data_Q, na.rm = TRUE)
 
 
@@ -31,6 +31,7 @@ env_data_R <- concat_all_env_vars(data, "R", metadata)
 env_data_S <- concat_all_env_vars(data, "S", metadata)
 env_data_turb <- concat_all_env_vars(data, "turb", metadata)
 env_data_O <- concat_all_env_vars(data, "O", metadata)
+env_data_V <- concat_all_env_vars(data, "V", metadata)
 
 # INVERSE DISTANCE WEIGHTING
 p <- 1
@@ -41,6 +42,8 @@ data$R <- inverse_distance(data, env_data_R, metadata,p,"R")
 data$S <- inverse_distance(data, env_data_S, metadata,p,"S")
 data$turb <- inverse_distance(data, env_data_turb, metadata,p,"turb")
 data$O <- inverse_distance(data, env_data_O, metadata,p,"O")
+data$V <- inverse_distance(data, env_data_V, metadata,p,"V")
+
 
 #CALCULATE THE DELTA VALUES
 data_list <- split(data, f = data$tag_serial_number)

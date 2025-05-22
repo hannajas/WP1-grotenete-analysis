@@ -12,6 +12,16 @@ gnt05a_1066,21342.3,minutes,5,Q,gn
 rup00a_1066,69913.4,day,1,Q,rup
 zes29f_1066,70592.836,day,1,Q,zes
 zes00a_1066,107867.4256,day,1,Q,zes
+gnt07a_1066,8702.5,minutes,15,H,gn
+gnt05a_1066,21342.3,minutes,5,H,gn
+BS_RUP_1095,63071.7,minutes,6,H,rup
+zes28a_1066,72906.86678,minutes,1,H,zes
+zes01a_1066,107553.25,minutes,1,H,zes
+gnt07a_1066,8702.5,minutes,15,V,gn
+gnt05a_1066,21342.3,minutes,5,V,gn
+BS_RUP_1095,63071.7,day,1,V,rup
+zes28a_1066,72906.86678,day,1,V,zes
+zes01a_1066,107553.25,day,1,V,zes
 photoperiod,,day,1,photoperiod,
 ALMC_30BO01008,,minutes,15,R,
 ALMC_30KP01011,,minutes,15,R,

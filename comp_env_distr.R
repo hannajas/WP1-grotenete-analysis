@@ -81,3 +81,49 @@ p2 <- ggplot(distribution)+
     labs(title = "Photoperiod", x = "Photoperiod", y = "Density") +
     theme(axis.text.x = element_text(size = 14, colour = "black"), axis.title.x=element_text(size=16), axis.title.y=element_text(size=16), axis.text.y = element_text(size = 14))+#x as in logaritmic scale
     scale_x_log10()
+
+
+
+#######################################################################################################################################################################
+# water velocity
+metadata_V <- filter(metadata, metadata$type == "V") 
+
+distribution <- data.frame()
+samples_init <- data.frame()
+for (k in 1:length(mydfnew.split.eel)){
+    start <- min(mydfnew.split.eel[[k]]$arrival)
+    end <- max(mydfnew.split.eel[[k]]$departure)
+    for (i in 1:nrow(metadata_V)){
+        path <- paste("./data/interim/processed/",metadata_V$name[i],"_V.csv", sep ="")
+        temp <- read_csv(path, show_col_types = FALSE)
+        temp <- temp %>% filter(Timestamp >= start & Timestamp <= end)
+        temp$type <- "distribution"
+        #temp$sample[which(temp$Timestamp %in% round_date(mydfnew.split.eel[[k]]$departure,unit=metadata_Tw$resolution[i]))] <- temp$Value[which(temp$Timestamp %in% round_date(mydfnew.split.eel[[k]]$departure,unit=metadata_Tw$resolution[i]))]
+
+        #concat to previous temp data.frame
+        distribution <- rbind(distribution, temp)
+        id <- which(temp$Timestamp %in% round_date(mydfnew.split.eel[[k]]$departure,unit=metadata_V$resolution[i]))
+        sample <- temp[id,]
+        sample$type <- "sample"
+        distribution <- rbind(distribution, sample)
+        # select in temp the rows where the Timestamp is equal to the departure time of the eel mydfnew.split.eel[[k]]$departure:
+        #samples <- temp %>% filter(Timestamp %in% round_date(mydfnew.split.eel[[k]]$departure,unit=metadata_Tw$resolution[i]))
+        #samples_init <- rbind(samples_init, samples)
+        #samples <- temp$Value[round_date(mydfnew.split.eel[[k]]$departure,unit=metadata_Tw$resolution[i])==temp$Timestamp,]
+    }
+}
+
+p2 <- ggplot(distribution)+
+    geom_density(aes(x = Value, colour=type, fill=type),alpha = 0.2,linewidth =2,show.legend = TRUE) +
+    labs(title = "Density plot of Vw values", x = "Vw values", y = "Density") +
+    theme(axis.text.x = element_text(size = 14, colour = "black"), axis.title.x=element_text(size=16), axis.title.y=element_text(size=16), axis.text.y = element_text(size = 14))+#x as in logaritmic scale
+    scale_x_log10()
+
+p2 <- ggplot(samples_init, aes(x = Value))+
+    geom_density(alpha = 0.5) +
+    labs(title = "Sample", x = "Q values", y = "Density") +
+    theme_minimal() +
+    theme(legend.position = "top") +
+    theme(axis.text.x = element_text(size = 14, colour = "black"), axis.title.x=element_text(size=16), axis.title.y=element_text(size=16), axis.text.y = element_text(size = 14))+
+    scale_x_log10()
+print(p1 / p2)

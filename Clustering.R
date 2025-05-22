@@ -12,11 +12,15 @@ k <- 2
 ############################################
 # With raw data
 mydfnew.split.eel <- split(data, data$tag_serial_number)
-pdf("./figures/2019_grotenete_migration_1D_clustering_manhattan.pdf")
+pdf("./figures/2019_grotenete_migration_1D_clustering_manhattan_log_kmeans.pdf")
 for (i in 1:length(mydfnew.split.eel)){
-    mydfnew.temp <- mydfnew.split.eel[[i]]
+    mydfnew.temp <- mydfnew.split.eel[[i]] %>% filter(!is.na(speed_m_s))
+    if (nrow(mydfnew.temp) < 2) {
+        next
+    }
     #distances <- dist(mydfnew.temp$speed_m_s, method = "manhattan")
-    result <- Ckmeans.1d.dp(mydfnew.temp$speed_m_s, k)
+    #result <- Ckmeans.1d.dp(mydfnew.temp$speed_m_s, k)
+    result <- kmeans(log(mydfnew.temp$speed_m_s), centers = 2, nstart = 10)
     mydfnew.temp$cluster <- as.factor(result$cluster)
     #mydfnew.temp$cluster <- result$cluster #zogezegd 210 rijen???
     g <- ggplot(mydfnew.temp)
@@ -31,7 +35,7 @@ for (i in 1:length(mydfnew.split.eel)){
     #g <- g + geom_point(aes(arrival, photoperiod, colour = "gray"), data = mydfnew.temp, shape = 16, size = 5)
     g <- g + theme(plot.title = element_text(lineheight=.8, face="bold", size=20))
     #g <- g + scale_y_continuous(limit = c(-240000, 15000),breaks = c(-240000, -220000, -200000, -180000, -160000, -140000,-135000,-130000,-125000,-120000,-115000,-110000,-105000,-100000,-95000,-90000,-85000, -80000, -75000, -70000, -65000, -60000, -55000, -50000, -45000, -40000, -35000, -30000, -25000, -20000, -15000, -10000, -5000, 0, 5000, 10000, 15000), labels = c(-240, -220, -200, -180, -160, -140,-135,-130,-125,-120,-115,-110,-105,-100,-95,-90,-85,-80,-75,-70,-65,-60,-55,-50,-45,-40,-35,-30,-25,-20,-15,-10,-5,0,5,10,15))
-    g <- g + labs(title = mydfnew.temp$tag_serial_number[1], subtitle = mydfnew.temp$catch_year) 
+    #g <- g + labs(title = mydfnew.temp$tag_serial_number[1], subtitle = mydfnew.temp$catch_year) 
     g <- g + ylab("Distance (m)")
     g <- g + xlab("Date")
     # g <- g + scale_x_date(date_labels = "%b-%d-%Y")
@@ -66,12 +70,16 @@ id <- as.character(data$tag_serial_number)
 id_unique <- unique(id)
 traj <- as.ltraj(xy,data$middledate, id) #traj[[1]]$dist --> 21 object for which the last one is NA
 
-pdf("./figures/2019_grotenete_migration_1D_clustering_interpolated.pdf")
+pdf("./figures/kmeans_1D_clustering_interpolated_log.pdf")
 for(a in 1:length(traj)){
   if (nrow(traj[[a]]) > 1) {
     one_traj <- redisltraj(traj[a], u = 60*60*60, type = "time")
-    mydfnew.temp <- do.call(rbind.data.frame, one_traj)
-    result <- Ckmeans.1d.dp(mydfnew.temp$dist, k)
+    mydfnew.temp <- do.call(rbind.data.frame, one_traj) %>% filter(!is.na(dist))
+    if (nrow(mydfnew.temp) < 2) {
+        next
+    }
+    #result <- Ckmeans.1d.dp(mydfnew.temp$dist, k)
+    result <- kmeans(log(mydfnew.temp$dist), centers = 2, nstart = 10)
     mydfnew.temp$cluster <- as.factor(result$cluster)
     mydfnew.temp$cum_dist <- cumsum(mydfnew.temp$dist)
     g <- ggplot(mydfnew.temp)+
@@ -94,10 +102,13 @@ dev.off()
 
 ######################################################################################################
 # plot clusters
-data_filter <- data %>% filter(tag_serial_number == "1294161")
-result <- Ckmeans.1d.dp(data_filter$speed_m_s, 2, method="linear")
+data_filter <- data %>% filter(tag_serial_number == "1294161" & !is.na(speed_m_s))
+#result <- Ckmeans.1d.dp(data_filter$speed_m_s, 2, method="linear")
+result <- kmeans(log(data_filter$speed_m_s), centers = 2, nstart = 10)
 plot(result)
-
+data_filter$cluster_id <- factor(result$cluster)
+ggplot(data_filter, aes(arrival, speed_m_s, color = cluster_id)) + 
+  geom_point()
 
 
 one_traj <- redisltraj(traj[16], u = 60*60*60, type = "time")

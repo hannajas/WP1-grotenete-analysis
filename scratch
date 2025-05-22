@@ -130,3 +130,20 @@ test <- filter(data_filter, dplyr::lag(station_name) == seq_af[1] & station_name
             }
         }
     }
+
+
+
+
+
+
+
+
+
+
+####################################################################################################################
+metadata_filter <- filter(metadata, metadata$type == "V")%>%
+    filter(name == "zes01a_1066")
+env_data <- read_csv(paste('./data/interim/processed/','zes01a_1006','_V.csv', sep =""), show_col_types = FALSE)
+mean(env_data$Value[env_data$Timestamp == round_date(data$departure[1],unit = metadata$resolution[1])])
+
+concat_env_var(data, metadata_filter[3,], env_data)
