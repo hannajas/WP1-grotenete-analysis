@@ -5,17 +5,12 @@ library(tidyquant)
 library(patchwork)
 library(geosphere)
 
-# Source functions
-source("./src/concat_all_env_var_functions.R")
-
 # load data
 data <- read_csv('./data/interim/migration.csv', show_col_types = FALSE)
 metadata_eel <- read_csv('./data/raw/eel_meta_data.csv', show_col_types = FALSE)
 metadata <- read_csv('./data/interim/Metadata.csv', show_col_types = FALSE)
 data <- filter(data, (!startsWith(data$station_name, "ws-") & data$downstream == TRUE))
 
-##################################################################################################################
-# Environmental variables
 
 #boxplot of speed for each seg_id
 data %>%
