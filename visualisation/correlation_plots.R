@@ -88,6 +88,39 @@ axis.title.y = element_text(size = 25))
 
 
 #water velocity
+# based on datafilter calculate for each day the weighted average of speed_m_s (weigthed on the period of the day that this speed_was measured)
+data_filter <- read_csv('./data/interim/migration_env_filter.csv', show_col_types = FALSE)
+data_filter$middledate <- as.POSIXct(round_date(data_filter$arrival+data_filter$residence/2, "15 mins"))
+
+data_filter <- data_filter %>%
+    mutate(midnight = floor_date(middledate, "day") %within% (middledate %--% lag(middledate)))
+data_filter$weight <- NA
+for (i in 2:nrow(data_filter)) {
+    if (data_filter$midnight[i] == TRUE) {
+        data_filter$weight[i] <- int_length(data_filter$middledate[i] %--% floor_date(data_filter$middledate[i], "day"))# nog mee rekeing houden als de paling er meer dan 1 DAG OVER DOET
+    } else {
+        data_filter$weight[i] <- int_length(data_filter$middledate[i] %--% data_filter$middledate[i-1])
+    }
+}
+
+data_eels <- data_filter %>%
+    filter(tag_serial_number == 1171746)
+
+data_day <- data.frame(
+    date = seq(floor_date(data_eels$arrival[1], "day"), floor_date(data_eels$arrival[nrow(data_eels)], "day"), by="days"),
+    speed_m_s = NA
+)
+
+for (i in 1:nrow(data_day)) {
+    data_day_filter <- data_eels %>%
+        filter(floor_date(arrival,"day") == data_day$date[i] | floor_date(departure,"day") == data_day$date[i])
+    if (nrow(data_day_filter) > 1) {
+        
+    }
+}
+
+data_filter <- data_filter %>%
+    filter(zone == "non-tidal")
 p1 <- ggplot(data_filter)+
 geom_point(aes(V, migration_speed), shape = 16, size = 5)+
 #geom_smooth(method=lm, size = 2)+

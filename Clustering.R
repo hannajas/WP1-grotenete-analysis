@@ -1,12 +1,19 @@
 library(tidyverse)
 library(dplyr)
-library(Ckmeans.1d.dp)
 library(sp)
 library(sf)
 library(adehabitatLT)
 
-
+##############################################################################################################
+# Load data
+##############################################################################################################
 data <- read_csv('./data/interim/migration_env_filter.csv', show_col_types = FALSE)
+
+
+
+##############################################################################################################
+# kmeans clustering
+##############################################################################################################
 k <- 2
 
 ############################################
@@ -116,3 +123,20 @@ mydfnew.temp <- do.call(rbind.data.frame, one_traj)
 k <- 2
 result <- Ckmeans.1d.dp(mydfnew.temp$dist, k=2)
 plot(result)
+
+
+
+##############################################################################################################
+# dbscan clustering
+##############################################################################################################
+library(dbscan)
+library(factoextra)
+speed <- data %>% filter(!is.na(speed_m_s) & tag_serial_number == "1294161") %>%
+  select(arrival, speed_m_s) %>%
+  mutate(speed_m_s = log(speed_m_s))
+speed$speed_m_s
+kNNdist <- kNNdistplot(as.matrix(speed$speed_m_s), k = 4)#epsilon = 0.015
+
+db <- dbscan(as.matrix(speed$speed_m_s), eps = 0.04, minPts = 2)
+print(db)
+#8 clusters AND 5 noise points (for all eels together!)

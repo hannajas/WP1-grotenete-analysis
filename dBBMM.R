@@ -213,6 +213,33 @@ dBBMM <- dynBBMM(input = runRSP_out_1, base.raster = base.raster_longlat,UTM = 3
 #run een hele namiddag en nacht lang :/
 
 
+
+###################################################################################################################
+# kijken of output van runRSP_out_1 kan gebruikt worden voor smoothing!
+load("./data/analysis/runRSP_out_A69-9006-3945.RData")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ######################################################################################################
 #debug
 detections <- explore_out$valid.detections
