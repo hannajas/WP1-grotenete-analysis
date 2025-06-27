@@ -84,15 +84,21 @@ p_detect <- function(state, receiver,a,beta) {#(1xN, 1xR, a, beta)
   return(prob)#NxR
 }
 #update particle weight
-update_weights <- function(particles, observations, receivers,a,beta) {#(1xN, 1xR, 1xR, a, beta) Observations should be uploaded voor a certain time stamp!
+update_weights_mulpt <- function(particles, particles_new, observations, receivers,a,beta) {#(1xN, 1xR, 1xR, a, beta) Observations should be uploaded voor a certain time stamp!
   for (i in 1:nrow(particles)) {
-    p <- particles[i, ]
+    p_old <- particles[i, ]
+    p <- particles_new[i, ]
     likelihood <- 1
     for (j in 1:nrow(receivers)) {
       r <- receivers[j, ]
       obs <- observations[[r$id]]#je wil de eerste rij van de observaties opvragen (van alle receivers maar enkel van tijdstap 1)
-      p_yk <- p_detect(p$x, r$distance,a,beta)
-      likelihood <- likelihood * (p_yk^obs) * ((1 - p_yk)^(1 - obs))
+      if (p_old$x < r$distance < p$x){
+        # If the particle moved past the receiver, it can be detected
+        likelihood <- likelihood * 1
+      } else {
+        p_yk <- p_detect(p$x, r$distance,a,beta)
+        likelihood <- likelihood * (p_yk^obs) * ((1 - p_yk)^(1 - obs))
+      }
     }
     particles$weight[i] <- particles$weight[i] * likelihood
   }
@@ -101,20 +107,26 @@ update_weights <- function(particles, observations, receivers,a,beta) {#(1xN, 1x
 }
 
 
-update_weights <- function(particles, observations, receivers, a, beta) {
+update_weights <- function(particles,particles_new, observations, receivers, a, beta) {
   log_weights <- numeric(nrow(particles))  # Start at log(1)
 
   for (i in 1:nrow(particles)) {
     log_likelihood <- 0
-    p <- particles[i, ]
-
+    p_old <- particles[i, ]
+    p <- particles_new[i, ]
     for (j in 1:nrow(receivers)) {
       r <- receivers[j, ]
       receiver_id <- as.character(r$id)
       obs <- observations[[receiver_id]]  # Should be 0 or 1
 
       # Compute detection probability
-      p_yk <- p_detect(p$x, r$distance, a, beta)
+
+      if ((p_old$x < r$distance) & (r$distance < p$x)){
+        # If the particle moved past the receiver, it can be detected
+        p_yk <- 1
+      } else {
+        p_yk <- p_detect(p$x, r$distance,a,beta)
+      }
 
       # Clamp p_yk to avoid log(0)
       p_yk <- pmin(pmax(p_yk, 1e-10), 1 - 1e-10)
@@ -157,8 +169,8 @@ particles <- initialize_particles(N)
 #test <- p_detect(particles, receivers$x, a, beta) # Example call to check detection probability
 particle_history <- list()
 for (t in 1:nrow(observations)) {
-  particles <- move_particles(particles)
-  particles <- update_weights(particles, observations[t,], receivers,a,beta)
+  particles_new <- move_particles(particles)
+  particles <- update_weights(particles, particles_new, observations[t,], receivers,a,beta)
   particles <- resample_particles(particles)
   particle_history[[t]] <- particles
   #particle_history[[paste0("t", t)]] <- particles
