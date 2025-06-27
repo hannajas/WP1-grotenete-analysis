@@ -6,6 +6,7 @@ library(crawl)
 library(ggspatial)
 library(mapview)
 library(prettymapr)
+library(dbscan)
 
 ############################################################################################
 # set up the data structure
@@ -127,6 +128,7 @@ fit_crawl <- function(d, fixpar) {
           } else {activity <- NULL},
       fixPar = fixpar,#column name of this in the dataframe?
       data = d,
+      drift = FALSE,
       prior = NULL,
       method = "Nelder-Mead",
       Time.name = "middledate",
@@ -159,11 +161,11 @@ test <- furrr::future_pmap(list(d = sf_locs$data,fixpar = sf_locs$fixpar),
 ##########################################################################################
 .get_sim_tracks <- function(crw_fit,iter) {
   
-  simObj <- crw_fit %>% crawl::crwSimulator(predTime = '1 hour')
+  simObj <- crw_fit %>% crawl::crwSimulator(predTime = '1 hour')#Construct a posterior simulation object for the CTCRW state vectors
   
   sim_tracks = list()
   for (i in 1:iter) {
-    sim_tracks[[i]] <- crawl::crwPostIS(simObj, fullPost = FALSE)
+    sim_tracks[[i]] <- crawl::crwPostIS(simObj, fullPost = FALSE)#Simulate a value from the posterior distribution of a CTCRW model
   }
   return(sim_tracks)
 }
@@ -206,12 +208,111 @@ mapview(sf_locs)
 ##########################################################################################
 # extract simulation results
 ##########################################################################################
-tbl_locs_fit <- tbl_locs_fit %>% 
-  dplyr::mutate(sim_points = crawl::crw_as_sf(.$sim_tracks, ftype = "POINT",
-                                             locType = "p"))#p = predictions and o = observations
-raw_sim_tracks <- tbl_locs_fit$sim_tracks
+sim_coord_df <- as.data.frame(tbl_locs_fit$sim_tracks[[1]][[1]]$alpha.sim)
+sample <- sim_coord_df %>%
+  dplyr::mutate(
+    middledate = tbl_locs_fit$sim_tracks[[1]][[1]]$middledate,
+    tag_serial_number = tbl_locs_fit$tag_serial_number[1]
+  ) %>%
+  rename(longitude = mu.x, latitude = mu.y)
 
+regular_sample <- sample %>% #select only round hours
+  dplyr::filter(
+  middledate == lubridate::round_date(middledate, "1 hour")) %>% #to sf object
+  sf::st_as_sf(coords = c("longitude", "latitude"), crs = 31370)
+mapView(regular_sample)
+
+st_write(regular_sample, 
+          dsn = "./figures/regular_sample_1171746.shp")
+
+##########################################################################################
+# load the projected data
+##########################################################################################
+sample_proj <- read_csv("C:/Code/fish-tracking/fish-tracking/scripts/receiver_distance_analysis/sample_1171746_proj.csv")
+sf_sample_proj <- sf::st_as_sf(sample_proj, coords = c("X","Y")) %>%
+    sf::st_set_crs(31370) %>%
+    mutate(
+      middledate = regular_sample$middledate,
+      tag_serial_number = regular_sample$tag_serial_number
+    ) %>%
+    select(-station_name, -animal_project_code)
+mapView(sf_sample_proj)
+
+#add column with the distance between the points
+#this is the ABSOLUTE DISTANCE!! schoudl be changed!
+sf_sample_proj <- sf_sample_proj %>%
+  dplyr::mutate(
+    distance = c(0, 
+                 sf::st_distance(sf_sample_proj[-nrow(sf_sample_proj),], 
+                                 sf_sample_proj[-1,], by_element = TRUE)),## add a column with the speed
+    speed = distance / as.numeric(difftime(middledate, 
+                                     dplyr::lag(middledate), 
+                                     units = "secs"))
+  )
+
+##########################################################################################
+#clustering
+##########################################################################################
+#kmeans
+sf_sample_proj_speed <- sf_sample_proj %>%
+  dplyr::filter(!is.na(speed))
+speed <- sf_sample_proj_speed$speed
+
+
+result <- kmeans(speed, centers = 2, nstart = 10)
+result
+
+ggplot(sf_sample_proj_speed) +
+  annotation_map_tile(type = esri_ocean,zoomin = 1,progress = "none") + 
+  geom_sf(data=sf_sample_proj_speed, aes(color = as.factor(result$cluster)), size = 3) +#manual colors
+  scale_color_manual(values = c("red", "#29a11e")) +
+  labs(color = "State") +
+  ggtitle("Speed clustering eel 1171746")
+#save
+ggsave("./figures/Clustering/speed_kmeans_1h_1171746.png")
+
+# ook geprobeerd met log speed, maar dit werkt niet!
+sf_sample_proj_speed_log <- sf_sample_proj %>%
+  dplyr::filter(!is.na(speed) & speed > 0) %>%
+  dplyr::mutate(log_speed = log(speed))
+speed_log <- sf_sample_proj_speed_log$log_speed
+result_log <- kmeans(speed_log, centers = 2, nstart = 10)
+
+ggplot(sf_sample_proj_speed_log) +
+  annotation_map_tile(type = esri_ocean,zoomin = 1,progress = "none") + 
+  geom_sf(data=sf_sample_proj_speed_log, aes(color = as.factor(result_log$cluster)), size = 3) +#manual colors
+  scale_color_manual(values = c("red", "#29a11e")) +
+  labs(color = "State") +
+  ggtitle("Speed clustering eel 1171746 (log speed)")
+
+
+##########################################################################################
+# dbscan
+kNNdist <- kNNdistplot(as.matrix(speed), k = 8)
+db <- dbscan(as.matrix(speed), eps = 0.025, minPts = 8)
+sf_sample_proj_speed$cluster <- db$cluster
+sf_sample_proj_speed$cluster[sf_sample_proj_speed$cluster == 0] <- "noise"
+
+print(db)
+
+ggplot() +
+  annotation_map_tile(type = esri_ocean,zoomin = 1,progress = "none") + 
+  geom_sf(data=sf_sample_proj_speed, aes(color = as.factor(cluster)), size = 3) +
+  scale_color_manual(values = c("red", "#29a11e", "blue")) +
+  labs(color = "Cluster") +
+  ggtitle("Speed clustering eel 1171746")
+ggsave("./figures/Clustering/speed_dbscan_1h_1171746.png")
+#log speed
+kNNdist <- kNNdistplot(as.matrix(speed_log), k = 2)#speeds are ordered, then the distance for the lowest speed to the k-th nearest neighbor is plotted
+db <- dbscan(as.matrix(speed_log), eps = 0.13, minPts = 8)
+db
+
+ggplot(sf_sample_proj_speed_log) +
+  geom_sf(aes(color = as.factor(db$cluster))) +
+  scale_color_brewer(palette = "Set1") +
+  labs(color = "Cluster") +
+  ggtitle("Speed Clustering of Eel Migration Data")
 ##########################################################################################
 # klad
 ##########################################################################################
-list(a = c(sf::st_coordinates(sf_locs$data[[1]])[[1,1]], 0,sf::st_coordinates(sf_locs$data[[1]])[[1,2]], 0))
+
