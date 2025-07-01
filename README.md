@@ -73,7 +73,10 @@ Trajectory smoothing
 * `Smoothing.R:` regularistaion of trajectories(crawl package) (GIVES ERRORS FOR NOW)
 
 Labeling
-* `Clustering.R:` kmeans (both for "raw" trajectory as for regularizes trajectory)
+* `Clustering.R:` kmeans (different options were tested BUT raw data, seperate eels and k=2 works best!)
+    + working with interpolated data --> even more skewed data
+    + silhouette width method + biological knowledge --> $k = 2$
+    + looking at seperate eels (less false resident in straightforward migration part)
 * `BCPA.R:`Behavioural change point analysis
 * `trajectory_analysis.R:` Lavielle and GUEGUEN analysis
 
