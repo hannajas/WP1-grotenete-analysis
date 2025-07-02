@@ -2,91 +2,46 @@ library(tidyverse)
 library(dplyr)
 library(ragg)
 data_filter <- read_csv('./data/interim/migration_env_filter.csv', show_col_types = FALSE)
-
-# CORRELATION PLOT
-# Tw
-p <- ggplot()+
-geom_point(aes(Tw, speed_m_s, colour = downstream_migration),data=data_filter, shape = 16, size = 5)+
-#scale_color_manual(values = c(FALSE = "red",TRUE =  "green"))+
-#geom_smooth(method=lm, size = 2)+
-theme(
+# Plot style
+style <- theme(
 axis.line = element_line(colour = "black"),
 axis.text.x = element_text(size = 20, colour = "black", angle=90),
 axis.title.x = element_text(size = 25),
 axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))+
+axis.title.y = element_text(size = 25))
+
+########################################################################################################
+# CORRELATION PLOTS
+########################################################################################################
+
+########################################################################################################
+# Tw
+p <- ggplot()+
+geom_point(aes(Tw, speed_m_s, colour = downstream_migration),data=data_filter, shape = 16, size = 5)+
+style+
 labs(x = "Tw [m^3/s]",
     y = "speed_m_s")
 #ggsave('./figures/correlations/watertemperature.png')
 
-d1 <- ggplot()
-d1 <- d1 + geom_point(aes(Tw, speed_m_s), data = data_filter, shape = 16, size = 5)
-d1 <- d1 + geom_smooth(method=lm)
-d1 <- d1 +
-  theme(
-    axis.line = element_line(colour = "black"),
-    axis.text.x = element_text(size = 20, colour = "black", angle=90),
-    axis.title.x = element_text(size = 25),
-    axis.text.y = element_text(size = 25, colour = "black"),
-    axis.title.y = element_text(size = 25))
-#d1 <- d1 + xlim(-6,3)
+d1 <- ggplot()+
+geom_point(aes(delta_Tw, speed_m_s), data = data_filter, shape = 16, size = 5)+
+style
 #ggsave('./figures/correlations/delta_watertemperature.png')
 
-g <- ggplot(data_filter, aes(Tw, downstream_migration))+
-geom_point(shape = 16, size = 5)+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))
-#ggsave('./figures/watertemperature_mirgation.png')
-
-d1 <- ggplot()
-d1 <- d1 + geom_point(aes(delta_Tw, speed_m_s), data = data_filter, shape = 16, size = 5)
-d1 <- d1 +
-  theme(
-    axis.line = element_line(colour = "black"),
-    axis.text.x = element_text(size = 20, colour = "black", angle=90),
-    axis.title.x = element_text(size = 25),
-    axis.text.y = element_text(size = 25, colour = "black"),
-    axis.title.y = element_text(size = 25))
-#ggsave('./figures/correlations/delta_watertemperature.png')
-
+########################################################################################################
 # Q
 p1 <- ggplot(data_filter)+
 geom_point(aes(Q, downstream_migration, colour= downstream_migration), shape = 16, size = 5)+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))+
+style+
 labs(x = "Debiet [m^3/s]",
     y = "migration")
 
-p1 <- ggplot(data_filter)+
-geom_point(aes(Q, migration_speed, colour=downstream_migration), shape = 16, size = 5)+
-#geom_smooth(method=lm, size = 2)+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))
-p1 <- p1 + scale_x_log10(guide = "axis_logticks")
-#ggsave('./figures/correlations/log_discharge.png')
 
 Q_delta <- ggplot(data_filter, aes(delta_Q, speed_m_s))+
 geom_point(shape = 16, size = 5)+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))
+style
 
-
+########################################################################################################
 #water velocity
 # based on datafilter calculate for each day the weighted average of speed_m_s (weigthed on the period of the day that this speed_was measured)
 data_filter <- read_csv('./data/interim/migration_env_filter.csv', show_col_types = FALSE)
@@ -123,27 +78,17 @@ data_filter <- data_filter %>%
     filter(zone == "non-tidal")
 p1 <- ggplot(data_filter)+
 geom_point(aes(V, migration_speed), shape = 16, size = 5)+
-#geom_smooth(method=lm, size = 2)+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))
+style
 #ggsave('./figures/correlations/water_velocity.png')
 
+
+########################################################################################################
 #photoperiod
-d3 <- ggplot()
-d3 <- d3 + geom_point(aes(photoperiod, speed_m_s), data = data_filter, shape = 16, size = 5)
-d3 <- d3 +
-  theme(
-    axis.line = element_line(colour = "black"),
-    axis.text.x = element_text(size = 20, colour = "black", angle=90),
-    axis.title.x = element_text(size = 25),
-    axis.text.y = element_text(size = 25, colour = "black"),
-    axis.title.y = element_text(size = 25))
-d3 <- d3 +   labs(x = "photoperiod [min]",y = "speed_m_s")
-d3 <- d3 + xlim(460,700)
+d3 <- ggplot()+
+geom_point(aes(photoperiod, speed_m_s), data = data_filter, shape = 16, size = 5)+
+style+ 
+labs(x = "photoperiod [min]",y = "speed_m_s")+
+xlim(460,700)
 
 d2 <- ggplot()
 d2 <- d2 + geom_point(aes(downstream_migration, photoperiod), data = data_filter, shape = 16, size = 5)
@@ -173,68 +118,49 @@ d2 <- d2 +   labs(x = "photoperiod [min]",y = "migration")
 
 
 
-
+########################################################################################################
 # RAINFALL
 R1 <- ggplot(data_filter, aes(R, speed_m_s))+
 geom_point(shape = 16, size = 5)+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))+
+style+
 labs(x = "R [mm]",
     y = "speed_m_s")
 
-
+########################################################################################################
 # SALINITY
 grenswaardes_distance_to_source <- c(43106.96,70306.3)
 data_filter <- filter(data, !startsWith(data$station_name, "ws-") & (data$distance_to_source_m> 70306.3)) #+- 62 waarden uitgelaten
 
 S_zes <- ggplot(data_filter, aes(S, speed_m_s))+
 geom_point(shape = 16, size = 5)+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))+
+style+
 labs(x = "S [mm]",
     y = "speed_m_s")
 #ggsave('./figures/correlations/salinity.png')
 
 
 
-
+########################################################################################################
 # TURBIDITY
 data_filter <- filter(data, !startsWith(data$station_name, "ws-"))
 
 T1 <- ggplot(data_filter, aes(turb, migration_speed))+
 geom_point(shape = 16, size = 5)+#geom_smooth(method = lm,formula = y ~ log(x))+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))+
+style+
 labs(x = "turb [NTU]",
     y = "speed_m_s")
 #ggsave('./figures/correlations/salinity.png')
 
+########################################################################################################
 # OXYGEN
 data_filter <- filter(data, !startsWith(data$station_name, "ws-"))
 
 O1 <- ggplot(data_filter, aes(O, speed_m_s))+
 geom_point(shape = 16, size = 5)+#geom_smooth(method = lm,formula = y ~ log(x))+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))+
+style+
 labs(x = "O [mg/l]",
-    y = "speed_m_s")
-O1 <- O1 + xlim(4,11)
+    y = "speed_m_s")+
+xlim(4,11)
 
 
 #######################################################################################################################
@@ -258,58 +184,36 @@ for (i in 2:length(seq_af)-1){
     print(paste("data_temp:",dim(data_temp)[1]))
     p1 <- ggplot(data_temp, aes(Tw, speed_m_s))+
     geom_point(shape = 16, size = 5)+ geom_smooth(method=lm, size = 2)+
-    theme(
-    axis.line = element_line(colour = "black"),
-    axis.text.x = element_text(size = 20, colour = "black", angle=90),
-    axis.title.x = element_text(size = 25),
-    axis.text.y = element_text(size = 25, colour = "black"),
-    axis.title.y = element_text(size = 25))+
+    style+
     labs(x = "Temperature [°C]",
         y = "speed_m_s")
 
     p2 <- ggplot(data_temp, aes(Q, speed_m_s))+
     geom_point(shape = 16, size = 5)+ geom_smooth(method=lm, linewidth = 2)+
-    theme(
-    axis.line = element_line(colour = "black"),
-    axis.text.x = element_text(size = 20, colour = "black", angle=90),
-    axis.title.x = element_text(size = 25),
-    axis.text.y = element_text(size = 25, colour = "black"),
-    axis.title.y = element_text(size = 25))+
+    style+
     labs(x = "Discharge [m^3/s]",
         y = "speed_m_s")
     p2 <- p2 + labs(title = paste("From segment",seq_af[i],"to",seq_af[i+1]))
     print(p2 / p1 + plot_layout(heights = c(1,1)))
     #print(p1)
 }
-dev.off()#PROBLEEM MET HET OPENEN
+dev.off()
 
 # welk soort traject wordt he meeste getraceerd?
 
 gn13_11 <- filter(data_filter, dplyr::lag(station_name) == "gn-13" & station_name == "gn-11")
 p <- ggplot(gn13_11, aes(Tw, speed_m_s))+
 geom_point(shape = 16, size = 5)+ geom_smooth(method=lm, size = 2)+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))+
+style+
 labs(x = "Debiet [m^3/s]",
     y = "speed_m_s")
 
 gn9_7 <- filter(data_filter, dplyr::lag(station_name) == "gn-9" & station_name == "gn-7")
 p <- ggplot(gn9_7, aes(Q, speed_m_s))+
 geom_point(shape = 16, size = 5)+ geom_smooth(method=lm, size = 2)+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))+
+style+
 labs(x = "Debiet [m^3/s]",
     y = "speed_m_s")
-
-
 
 
 ###########################################################################################################################
@@ -337,12 +241,7 @@ ggsave(g, filename = "C:/Code/WP1-grotenete-analysis/figures/Q_en_turb.png",heig
 
 ggplot(Q_turb_rup, aes(Q, Turbidity))+
 geom_point(shape = 16, size = 5)+
-theme(
-axis.line = element_line(colour = "black"),
-axis.text.x = element_text(size = 20, colour = "black", angle=90),
-axis.title.x = element_text(size = 25),
-axis.text.y = element_text(size = 25, colour = "black"),
-axis.title.y = element_text(size = 25))+
+style+
 labs(x = "Q [m^3/s]",
     y = "Turbidity [NTU]")
 
@@ -386,3 +285,40 @@ for (i in variables) {
 p <- env_data %>%
 dplyr::select(rup02e_SF_1066_turb, variables) %>%
 GGally::ggpairs()
+
+
+
+
+##############################################################################################
+# AFTER CLUSTERING
+##############################################################################################
+data_cluster <- read_csv('./data/interim/migration_env_filter_kmeans.csv', show_col_types = FALSE)
+data_cluster <- data_cluster %>%
+    mutate(cluster = as.factor(cluster))
+
+#variable to plot - EDITABLE
+var <- "Q"#other options are "logQ", "delta_Q", "Tw", "delta_Tw", "S", "turb", "O", "V", "photoperiod"
+p1 <- ggplot(data_cluster)+
+geom_point(aes(var, speed_m_s, colour=cluster), shape = 16, size = 5)+
+style+
+scale_x_log10(guide = "axis_logticks")
+p1
+
+variables <- c("logQ","delta_Q", "Tw","delta_Tw", "S", "turb", "O","V", "photoperiod","speed_m_s")#OR some individually: bv. "Q"
+data_cluster$cluster <- as.factor(data_cluster$cluster)
+data_cluster$logQ <- log(data_cluster$Q)
+data_cluster_long <- data_cluster %>%
+    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value") %>%
+    filter(!is.na(cluster)) # filter out NA values
+p <- ggplot(data_cluster_long, aes(x = cluster, y = value)) +
+geom_boxplot() +
+facet_wrap(~variable,nrow = 1,scales = "free")+#order the different plots
+theme(
+axis.text.x = element_text(size = 20, colour = "black", angle=90),
+axis.title.x = element_text(size = 20),
+axis.text.y = element_text(size = 25, colour = "black"),
+axis.title.y = element_text(size = 20),#title size
+strip.text = element_text(size = 20), #facet label size
+)
+windows(width = 16, height = 5)
+plot(p)

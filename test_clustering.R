@@ -203,18 +203,30 @@ print(db)
 ############################################
 # With interpolated data - all eels seperatly
 ############################################
+mydfnew.split.eel <- split(data, data$tag_serial_number)
 
-pdf("./figures/kmeans_1D_clustering_interpolated_log.pdf")
+pdf("./figures/Clustering/kmeans_log_interpolated_sep_eels.pdf")
 for(a in 1:length(traj)){
+  mydfnew.temp <- mydfnew.split.eel[[i]] %>% filter(!is.na(speed_m_s))
   if (nrow(traj[[a]]) > 1) {
-    one_traj <- redisltraj(traj[a], u = 60*60*60, type = "time")
+    one_traj <- redisltraj(traj[a], u = 5*60, type = "time")
     mydfnew.temp <- do.call(rbind.data.frame, one_traj) %>% filter(!is.na(dist))
     if (nrow(mydfnew.temp) < 2) {
         next
     }
     #result <- Ckmeans.1d.dp(mydfnew.temp$dist, k)
     result <- kmeans(log(mydfnew.temp$dist), centers = 2, nstart = 10)
-    mydfnew.temp$cluster <- as.factor(result$cluster)
+    centers <- result$centers
+    cluster_map <- if (centers[1] < centers[2]) c(1, 2) else c(2, 1)
+    reassigned_clusters <- cluster_map[result$cluster]
+    
+    mydfnew.temp$cluster <- as.factor(reassigned_clusters)
+    
+    # Ensure cluster column aligns with the original data
+    mydfnew.split.eel[[i]]$cluster <- NA
+    mydfnew.split.eel[[i]]$cluster[!is.na(mydfnew.split.eel[[i]]$speed_m_s)] <- mydfnew.temp$cluster
+
+
     mydfnew.temp$cum_dist <- cumsum(mydfnew.temp$dist)
     g <- ggplot(mydfnew.temp)+
     theme(axis.text.x = element_text(size = 14, colour = "black", angle=90),
