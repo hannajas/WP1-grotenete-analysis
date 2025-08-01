@@ -5,7 +5,7 @@
 "4","zes24a_SF_1066",76829.7,"minutes",10,"Tw",NA,"10M 0S",NA,NA,NA
 "5","zes19a_SF_B_1066",87897.2,"minutes",5,"Tw",NA,"5M 0S",NA,NA,NA
 "6","zes09x_SF_1066",100616.9768,"minutes",5,"Tw",NA,"5M 0S",NA,NA,"s-12"
-"7","zes01a_SF_1066",107553.25,"minutes",5,"Tw",NA,"5M 0S",NA,NA,NA
+"7","zes01a_SF_1066",107553.25,"minutes",10,"Tw",NA,"10M 0S",NA,NA,NA
 "8","L10_077",0,"minutes",15,"Q","gn","15M 0S",NA,NA,"rel_grotenete1"
 "9","gnt07a_1066",8702.5,"minutes",15,"Q","gn","15M 0S",NA,NA,NA
 "10","gnt05a_1066",21342.3,"minutes",5,"Q","gn","5M 0S",NA,NA,NA
@@ -14,9 +14,9 @@
 "13","zes00a_1066",107867.4256,"day",1,"Q","zes","1d 0H 0M 0S",NA,NA,NA
 "14","gnt07a_1066",8702.5,"minutes",15,"H","gn","15M 0S",NA,NA,NA
 "15","gnt05a_1066",21342.3,"minutes",5,"H","gn","5M 0S",NA,NA,NA
-"16","BS_RUP_1095",63071.7,"minutes",6,"H","rup","6M 0S",NA,NA,NA
-"17","zes28a_1066",72906.86678,"minutes",1,"H","zes","1M 0S",NA,NA,"s-8"
-"18","zes01a_1066",107553.25,"minutes",1,"H","zes","1M 0S",NA,NA,NA
+"16","BS_RUP_1095",63071.7,"minutes",5,"H","rup","5M 0S",NA,NA,NA
+"17","zes28a_1066",72906.86678,"minutes",10,"H","zes","10M 0S",NA,NA,"s-8"
+"18","zes01a_1066",107553.25,"minutes",10,"H","zes","10M 0S",NA,NA,NA
 "19","gnt07a_1066",8702.5,"minutes",15,"V","gn","15M 0S",NA,NA,NA
 "20","gnt05a_1066",21342.3,"minutes",5,"V","gn","5M 0S",NA,NA,NA
 "21","BS_RUP_1095",63071.7,"day",1,"V","rup","1d 0H 0M 0S",NA,NA,NA

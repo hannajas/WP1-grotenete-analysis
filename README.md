@@ -57,11 +57,20 @@ Data collection and explorative analysis
 * `explorative_data_analysis.R:` summaries of migration speeds
 * `link_env_variables.R:` linking the environmental variables with the telemetry data (adding to `/interim/migration_env_filter.csv`)
     
-    For each type of environmental data:
+    RAW DATA For each type of environmental data:
 
     + For each data point: `\src\concat_env_var_function.R:` function to average the environmental data over the swimtimes of the eels between 2 receivers.
+    + in `\src\concat_all_env_var_function.R:` de outputs van `concat_env_var_function.R` voor verschillende meetlocaties van de zelfde variabele worden gebundeld.
     + `\src\inverse_distance_function.R:` get one value out of the different datapoints by performing inverse distance weighting for each point in the migration trajectory
         - When datatype = "Q", there are 3 segments defined. To link environmental data with the receivers each receiver can only get information from data-point that are located whitin the same segment.
+
+    INTERPOLATED DATA
+
+    + Interpolated telemetry data is created in `Smoothing.R` (load `/interim/migration_inter.csv`)
+    + Here for all environmental data:
+        - `align_resolutions_function.R`: The resolutions are fix to a given input resolution (the resolution of the interpolated data)
+        - `\src\inverse_distance_function.R:` same as above
+    + saved in `/interim/migration_env_inter.csv`
 * `/visualisation:`
     + `create_eel_track_env_var_plot.R:` Each eel its trajectory plotted together with an environmental variable
     + `correlation_plots.R:` Correlations (saved at `/figures/correlations/`)
@@ -70,7 +79,9 @@ Data collection and explorative analysis
     + `Figures_for_presentations.R:` Additional figures for presenations
 
 Trajectory smoothing
-* `Smoothing.R:` regularistaion of trajectories(crawl package) (GIVES ERRORS FOR NOW)
+* `Smoothing.R:`
+    + regularistaion of trajectories(crawl package) (GIVES ERRORS FOR NOW)
+    + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv`
 
 Labeling
 * `Clustering.R:` kmeans (different options were tested BUT raw data, seperate eels and k=2 works best!)
@@ -83,3 +94,9 @@ Labeling
 Dynamic brownian bridge models
 * `dBBMM.R`
     + setting the actel input. Work with receiver locations projected on the river center.
+
+
+
+### Bugs
+* `align_resolutions_function`lijkt nog niet de werken voor rainfall ("R")
+* `inverse_distance_function.R` geeft een warning die gaat over het find_receiver deel (in denk dat het 2de argument in telemetry_data$temp <- replace( niet even lang is ander waar het het zou moeten worden ingevuld)
