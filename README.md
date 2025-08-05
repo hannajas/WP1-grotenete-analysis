@@ -16,7 +16,7 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
     + `/temperature:` contains temperature data
     + `/oxygen:` contains oxygen data
     + `/rainfall:` contains rainfall data
-    + `/salinity:` contains salinity data
+    + `/salinity:` contains salinity data [psu] (data only on Rupel and Scheldt - less reliable)
     + `/tide:` contains tide data (timestamp and heights at HW and LW, nonregular timestamps)
     + `/metadata:` contains the metadata of all environmental data
         - name: station name
@@ -38,7 +38,7 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 ### Scripts
 
 Data collection and explorative analysis
-* `/importing_data:` Making use of the wateRinfo package and save the data at `/raw`
+* `/importing_data/waterRinfo.R:` Making use of the wateRinfo package and save the data at `/raw`
 * `/cross_sections/get_velocities.R:` Calculate the water velocity for 5 locations (5 locations with Q-data)
 
     For each location:
@@ -70,18 +70,16 @@ Data collection and explorative analysis
     + Here for all environmental data:
         - `align_resolutions_function.R`: The resolutions are fix to a given input resolution (the resolution of the interpolated data)
         - `\src\inverse_distance_function.R:` same as above
+            - When datatype = "Q": because of the segments --> discontinuities can occur
     + saved in `/interim/migration_env_inter.csv`
+
+* `Q_as_trigger.R:` Is Q the trigger for migration if the other environmental conditions are met?
 * `/visualisation:`
     + `create_eel_track_env_var_plot.R:` Each eel its trajectory plotted together with an environmental variable
     + `correlation_plots.R:` Correlations (saved at `/figures/correlations/`)
         - between an environmental variable and the migration speed
         - between the environmental variables 
     + `Figures_for_presentations.R:` Additional figures for presenations
-
-Trajectory smoothing
-* `Smoothing.R:`
-    + regularistaion of trajectories(crawl package) (GIVES ERRORS FOR NOW)
-    + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv`
 
 Labeling
 * `Clustering.R:` kmeans (different options were tested BUT raw data, seperate eels and k=2 works best!)
@@ -91,12 +89,24 @@ Labeling
 * `BCPA.R:`Behavioural change point analysis
 * `trajectory_analysis.R:` Lavielle and GUEGUEN analysis
 
+Trajectory smoothing
+* `Smoothing.R:`
+    + regularistaion of trajectories(crawl package) (GIVES ERRORS FOR NOW)
+    + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv`
+
 Dynamic brownian bridge models
 * `dBBMM.R`
     + setting the actel input. Work with receiver locations projected on the river center.
 
 
+### Figures
+* `/Trajectory_linked_env_var:`
+* `/Trajectory:`
+* `/Clustering:`
+* `/correlations:`
+    + `ggpairs_inter_5min`: environmental variables compared (on data_inter_env)
 
-### Bugs
+
+## Bugs
 * `align_resolutions_function`lijkt nog niet de werken voor rainfall ("R")
-* `inverse_distance_function.R` geeft een warning die gaat over het find_receiver deel (in denk dat het 2de argument in telemetry_data$temp <- replace( niet even lang is ander waar het het zou moeten worden ingevuld)
+* `inverse_distance_function.R` geeft een warning die gaat over het find_receiver deel (in denk dat het 2de argument) in telemetry_data$temp <- replace( niet even lang is ander waar het het zou moeten worden ingevuld)

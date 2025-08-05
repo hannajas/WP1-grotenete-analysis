@@ -394,8 +394,16 @@ variables <- c(
   "photoperiod",
   "speed_m_s"
 ) #OR some individually: bv. "Q"
+
+#for the raw data
+#data_cluster <- read_csv(
+#  './data/interim/migration_env_filter_kmeans.csv',
+#  show_col_types = FALSE
+#)
+
+#for the interpolated data
 data_cluster <- read_csv(
-  './data/interim/migration_env_filter_kmeans.csv',
+  './data/interim/migration_env_inter.csv',
   show_col_types = FALSE
 )
 data_cluster <- data_cluster %>%
@@ -445,7 +453,7 @@ data_cluster_long <- data_cluster %>%
 #SCATTERPLOT
 #variable to plot - EDITABLE
 #other options then Q are "logQ", "delta_Q", "Tw", "delta_Tw", "S", "turb", "O", "V", "photoperiod"
-p1 <- ggplot(data_cluster[data_cluster$keep, ]) +
+p1 <- ggplot(data_cluster) + #[data_cluster$keep, ]
   geom_point(aes(Q, speed_m_s, colour = cluster), shape = 16, size = 5) + #log on y axis
   scale_x_log10(guide = "axis_logticks") +
   style #theme settings in beginning of the script
@@ -475,8 +483,14 @@ p <- ggplot(data_combined, aes(x = label, y = value, fill = source)) + #choose t
 windows(width = 16, height = 5)
 plot(p)
 
-# with the interpolated data
-#load rds file
-data_interpolated <- readRDS(
-  './data/interim/migration_env_filter_kmeans_long.rds'
-)
+# ggpairs plot
+p <- data_cluster %>%
+  dplyr::select(c("Tw","O", "logQ","S","V","turb","cluster")) %>%#remove NAs
+  GGally::ggpairs(ggplot2::aes(colour = cluster))
+
+  ggsave(
+    p,
+    filename = "./figures/correlations/ggpairs_inter_5min.png",
+    height = 10,
+    width = 20
+      )

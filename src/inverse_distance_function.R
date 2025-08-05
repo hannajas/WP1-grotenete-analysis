@@ -59,24 +59,24 @@ inverse_distance <- function(telemetry_data, env_data, metadata, p, data_type) {
   show_W <<- W
   telemetry_data$temp <- rowSums(V * W, na.rm = TRUE) / rowSums(W, na.rm = TRUE)
 
-  for (i in 1:n) {
-    if (!is.na(metadata_filter$receiver[i])) {
-      find_receivers <- telemetry_data$station_name ==
-        metadata_filter$receiver[i]
-      find_receivers <- replace(
-        find_receivers,
-        is.na(find_receivers),
-        FALSE
-      )
-      telemetry_data$temp <- replace(
-        telemetry_data$temp,
-        find_receivers,
-        unlist(env_data[
-          telemetry_data$station_name == metadata_filter$receiver[i],
-          i
-        ])
-      )
-    }
-  }
+  # for (i in 1:n) {
+  #   if (!is.na(metadata_filter$receiver[i])) {
+  #     find_receivers <- telemetry_data$station_name ==
+  #       metadata_filter$receiver[i]
+  #     find_receivers <- replace(
+  #       find_receivers,
+  #       is.na(find_receivers),
+  #       FALSE
+  #     )
+  #     telemetry_data$temp <- replace(
+  #       telemetry_data$temp,
+  #       find_receivers,
+  #       unlist(env_data[
+  #         telemetry_data$station_name == metadata_filter$receiver[i],
+  #         i
+  #       ])
+  #     )
+  #   }
+  # }
   return(telemetry_data$temp)
 }

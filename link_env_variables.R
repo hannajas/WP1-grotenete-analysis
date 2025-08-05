@@ -63,6 +63,13 @@ data_filter <- filter(data, !startsWith(data$station_name, "ws-")) #+- 62 waarde
 #######################################
 # Link environmental data with INTERPOLATED telemetry data
 #######################################
+p <- 1
+source("./src/inverse_distance_function.R")
+source("./src/align_resolutions_function.R")
+data_inter_env <- read_csv(
+  './data/interim/migration_inter.csv',
+  show_col_types = FALSE
+)
 env_data_Tw <- align_resolutions_function(
   "Tw",
   as.difftime(5, units = "mins"), #as.period(5, "mins"),
@@ -127,5 +134,13 @@ data_inter_env$S <-
 data_inter_env$R <-
   inverse_distance(data_inter_env, env_data_R, metadata, p, "R")
 data_inter_env$photoperiod <- na.locf(data_inter_env$photoperiod, na.rm = FALSE)
+
+data_list <- split(data_inter_env, data_inter_env$tag_serial_number)
+data_temp <- lapply(data_list, function(x) {
+  x$delta_Tw <- x$Tw - lag(x$Tw)
+  x$delta_Q <- x$Q - lag(x$Q)
+  return(x)
+})
+data_inter_env <- plyr::ldply(data_temp, data.frame)
 
 write_csv(data_inter_env, "./data/interim/migration_env_inter.csv")

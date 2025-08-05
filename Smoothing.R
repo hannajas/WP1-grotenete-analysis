@@ -439,24 +439,33 @@ not_na_idx <- which(!is.na(log_dist))
 
 not_na_idx <- which(!is.na(data_inter$dist))
 
-data_inter_env <- left_join(
+data_inter <- left_join(
   data_inter[, c("x", "y", "date", "dist", "dt", "tag_serial_number")],
-  data,
+  data[, setdiff(names(data), c("middledate", "x", "y"))],
   by = c("tag_serial_number", "date" = "rounded_date")
 )
 
 #I want to put values in the data_inter_env$speed_m_s column by filling in all the row above a value with that value
 
-data_inter_env <- data_inter_env %>%
+data_inter <- data_inter %>%
   group_by(tag_serial_number) %>%
   mutate(
     speed_m_s = zoo::na.locf(speed_m_s, fromLast = TRUE, na.rm = FALSE),
-    distance_to_source_m = zoo::na.locf(distance_to_source_m, fromLast = TRUE, na.rm = FALSE),
-    deploy_latitude = zoo::na.locf(deploy_latitude, fromLast = TRUE, na.rm = FALSE),
-    deploy_longitude = zoo::na.locf(deploy_longitude, fromLast = TRUE, na.rm = FALSE)#,
+    distance_to_source_m = zoo::na.approx(distance_to_source_m, na.rm = FALSE),
+    deploy_latitude = zoo::na.locf(
+      deploy_latitude,
+      fromLast = TRUE,
+      na.rm = FALSE
+    ),
+    deploy_longitude = zoo::na.locf(
+      deploy_longitude,
+      fromLast = TRUE,
+      na.rm = FALSE
+    ),
+    cluster = as.factor(zoo::na.locf(cluster, fromLast = TRUE, na.rm = FALSE))
     #station_name = zoo::na.locf(station_name, fromLast = TRUE, na.rm = FALSE)
   ) %>%
   ungroup()
 
 #save as csv
-write_csv(data_inter_env, "./data/interim/migration_inter.csv")
+write_csv(data_inter, "./data/interim/migration_inter.csv")

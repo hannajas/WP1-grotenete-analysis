@@ -43,7 +43,7 @@ for (i in 1:length(mydfnew.split.eel)) {
 }
 data_cluster <- bind_rows(mydfnew.split.eel)
 #save as csv
-write_csv(data_cluster, "./data/interim/migration_env_filter_kmeans.csv")
+write_csv(data_cluster, "./data/interim/migration_env_filter.csv")
 
 mydfnew.split.eel <- split(data_cluster, data$tag_serial_number)
 pdf("./figures/Clustering/kmeans_log_sep_eels.pdf")
