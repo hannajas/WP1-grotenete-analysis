@@ -80,3 +80,32 @@ test <- replace(
     i
   ])
 )
+
+
+#######################################################################################
+#interpolation
+#######################################################################################
+m <- 8
+inter.temp <- data_inter.eel[[m]]
+data.temp <- data.eel.filtered[[m]]
+
+original_times <- data.temp$rounded_date
+new_times <- inter.temp$date
+
+#is_original <- floor_date(new_times, unit = resolution_s) %in% floor_date(original_times, unit = resolution_s) # check if the date in inter.temp is in the original data
+is_original <- new_times %in% original_times
+
+row_ids <- which(data_inter$tag_serial_number == names(data_inter.eel)[m]) #select the row id's in data_inter of id k
+
+data_inter$is_original[row_ids] <- as.integer(is_original)
+
+
+
+View(data_inter[data_inter$tag_serial_number == names(data_inter.eel)[7], ])
+
+
+data_test <- left_join(
+  data_inter[data_inter$tag_serial_number == names(data_inter.eel)[m], c("x", "y", "date", "dist", "dt", "tag_serial_number")],
+  data[data$tag_serial_number == names(data_inter.eel)[m], setdiff(names(data), c("middledate", "x", "y"))],
+  by = c("tag_serial_number" = "tag_serial_number", "date" = "rounded_date")
+)

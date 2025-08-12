@@ -395,7 +395,8 @@ xy <- data[, c("x", "y")]
 date <- data$middledate
 id <- as.character(data$tag_serial_number)
 id_unique <- unique(id)
-traj <- as.ltraj(xy, data$middledate, id) #traj[[1]]$dist --> 21 object for which the last one is NA
+#data_rounded_date or data_middledate?
+traj <- as.ltraj(xy, data$rounded_date, id) #traj[[1]]$dist --> 21 object for which the last one is NA
 #t is one hour in seconds
 
 #data$cluster <- NA
@@ -422,7 +423,7 @@ for (k in seq_along(data_inter.eel)) {
   inter.temp <- data_inter.eel[[k]]
   data.temp <- data.eel.filtered[[k]]
 
-  original_times <- data.temp$middledate
+  original_times <- data.temp$rounded_date
   new_times <- inter.temp$date
 
   #is_original <- floor_date(new_times, unit = resolution_s) %in% floor_date(original_times, unit = resolution_s) # check if the date in inter.temp is in the original data
@@ -442,7 +443,7 @@ not_na_idx <- which(!is.na(data_inter$dist))
 data_inter <- left_join(
   data_inter[, c("x", "y", "date", "dist", "dt", "tag_serial_number")],
   data[, setdiff(names(data), c("middledate", "x", "y"))],
-  by = c("tag_serial_number", "date" = "rounded_date")
+  by = c("tag_serial_number" = "tag_serial_number", "date" = "rounded_date")
 )
 
 #I want to put values in the data_inter_env$speed_m_s column by filling in all the row above a value with that value
@@ -468,4 +469,4 @@ data_inter <- data_inter %>%
   ungroup()
 
 #save as csv
-write_csv(data_inter, "./data/interim/migration_inter.csv")
+write_csv(data_inter, "./data/interim/migration_inter_test.csv")

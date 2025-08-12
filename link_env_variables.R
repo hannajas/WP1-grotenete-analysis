@@ -67,7 +67,7 @@ p <- 1
 source("./src/inverse_distance_function.R")
 source("./src/align_resolutions_function.R")
 data_inter_env <- read_csv(
-  './data/interim/migration_inter.csv',
+  './data/interim/migration_inter_test.csv',
   show_col_types = FALSE
 )
 env_data_Tw <- align_resolutions_function(
@@ -143,4 +143,4 @@ data_temp <- lapply(data_list, function(x) {
 })
 data_inter_env <- plyr::ldply(data_temp, data.frame)
 
-write_csv(data_inter_env, "./data/interim/migration_env_inter.csv")
+write_csv(data_inter_env, "./data/interim/migration_env_inter_test.csv")

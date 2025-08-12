@@ -37,9 +37,9 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 
 ### Scripts
 
-Data collection and explorative analysis
+Data collection and explorative analysis I
 * `/importing_data/waterRinfo.R:` Making use of the wateRinfo package and save the data at `/raw`
-* `/cross_sections/get_velocities.R:` Calculate the water velocity for 5 locations (5 locations with Q-data)
+* `/cross_sections/get_velocities.R:` Calculate the water velocity for 5 locations (5 locations with Q-data and cross section data)
 
     For each location:
     + `\src\get_velocity_function.R:` Making use of waterlevel, discharge and H-A relations (save the data at `/interim`)
@@ -47,7 +47,7 @@ Data collection and explorative analysis
     + `\Circadian.R:` arrival/departure analysis
     + `\Tides.R:` arrival/departure analysis
     + `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
-* `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and stave at `/interim/migration_env_filter.csv`)
+* `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration_env_filter.csv`)
     + calulate the alterantive speed by incorporating the residence times at the receivers in the swimtime
         - `\src\calculate_speed_function.R:` function to calculate the speed for a dataframe with data from one eel
     + recalcutate the smooth eel track (remove timelimit for which a new track was started)
@@ -55,9 +55,16 @@ Data collection and explorative analysis
     + 'downstream_migration' column: ME NIET DUIDELIJK
     + add colums to defide the study area into different zones: tidal, transition and non-tidal (boundaries from Keirsebelik et al 2025)
 * `explorative_data_analysis.R:` summaries of migration speeds
-* `link_env_variables.R:` linking the environmental variables with the telemetry data (adding to `/interim/migration_env_filter.csv`)
+
+Trajectory smoothing
+* `Smoothing.R:` (load `/interim/migration_env_filter.csv`)
+    + regularisation of trajectories(crawl package) (GIVES ERRORS FOR NOW)
+    + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv` (now: resolution = 15 min)
+
+Data collection and explorative analysis II
+* `link_env_variables.R:` linking the environmental variables with the telemetry data
     
-    RAW DATA For each type of environmental data:
+    RAW DATA For each type of environmental data (adding to `/interim/migration_env_filter.csv`):
 
     + For each data point: `\src\concat_env_var_function.R:` function to average the environmental data over the swimtimes of the eels between 2 receivers.
     + in `\src\concat_all_env_var_function.R:` de outputs van `concat_env_var_function.R` voor verschillende meetlocaties van de zelfde variabele worden gebundeld.
@@ -89,11 +96,6 @@ Labeling
 * `BCPA.R:`Behavioural change point analysis
 * `trajectory_analysis.R:` Lavielle and GUEGUEN analysis
 
-Trajectory smoothing
-* `Smoothing.R:`
-    + regularistaion of trajectories(crawl package) (GIVES ERRORS FOR NOW)
-    + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv`
-
 Dynamic brownian bridge models
 * `dBBMM.R`
     + setting the actel input. Work with receiver locations projected on the river center.
@@ -110,3 +112,10 @@ Dynamic brownian bridge models
 ## Bugs
 * `align_resolutions_function`lijkt nog niet de werken voor rainfall ("R")
 * `inverse_distance_function.R` geeft een warning die gaat over het find_receiver deel (in denk dat het 2de argument) in telemetry_data$temp <- replace( niet even lang is ander waar het het zou moeten worden ingevuld)
+
+## Order of migration csv
+* `preprocessing_INBO_data.R:` starting from `/raw/migration.csv` and saved at `/interim/migration_env_filter.csv`
+* `link_env_variables.R:` (adding to `/interim/migration_env_filter.csv`)
+* `Clustering.R:` (adding to `/interim/migration_env_filter.csv`)
+
+
