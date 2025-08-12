@@ -55,7 +55,7 @@ data_eels <- data_eels %>%
   )
 
 
-# calculate $dawn_arr = P("dawn"| arrival = date x)
+# calculate $dawn_arr = P("dawn"| arrival = date x) (TODO write shorter)
 data_eels$dawn_w_arr <- unlist(lapply(data_eels$arrival, function(x) {
   circadian$w_dawn[which(circadian$date == floor_date(x, unit = "day"))]
 }))
