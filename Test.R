@@ -100,12 +100,17 @@ row_ids <- which(data_inter$tag_serial_number == names(data_inter.eel)[m]) #sele
 data_inter$is_original[row_ids] <- as.integer(is_original)
 
 
-
 View(data_inter[data_inter$tag_serial_number == names(data_inter.eel)[7], ])
 
 
 data_test <- left_join(
-  data_inter[data_inter$tag_serial_number == names(data_inter.eel)[m], c("x", "y", "date", "dist", "dt", "tag_serial_number")],
-  data[data$tag_serial_number == names(data_inter.eel)[m], setdiff(names(data), c("middledate", "x", "y"))],
+  data_inter[
+    data_inter$tag_serial_number == names(data_inter.eel)[m],
+    c("x", "y", "date", "dist", "dt", "tag_serial_number")
+  ],
+  data[
+    data$tag_serial_number == names(data_inter.eel)[m],
+    setdiff(names(data), c("middledate", "x", "y"))
+  ],
   by = c("tag_serial_number" = "tag_serial_number", "date" = "rounded_date")
 )

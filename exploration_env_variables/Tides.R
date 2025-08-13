@@ -29,18 +29,20 @@ for (i in 1:n) {
     temp$tij[oneven_indexes] <- "LW"
   }
   temp$interval <- temp$Timestamp %--% lead(temp$Timestamp)
+  temp$interval_sec <- int_length(temp$interval)
+  temp$name <- metadata_tij$name[i]
   assign(paste(metadata_tij$name[i], '_tij', sep = ""), temp)
 }
 
-for (i in 1:n) {
-  path <- paste(
-    './data/interim/processed/',
-    metadata_tij$name[i],
-    '_tij.csv',
-    sep = ""
-  )
-  write.csv(get(paste(metadata_tij$name[i], '_tij', sep = "")), path)
-}
+# for (i in 1:n) {
+#   path <- paste(
+#     './data/interim/processed/',
+#     metadata_tij$name[i],
+#     '_tij.csv',
+#     sep = ""
+#   )
+#   write.csv(get(paste(metadata_tij$name[i], '_tij', sep = "")), path)
+# }
 
 ###########################################################################################################
 #add two columns to the data_eels dataframe: tide_arrival, tide_departure
@@ -53,13 +55,31 @@ data_filter_tij <- data_filter %>%
     tide_arrival = NA,
     tide_departure = NA,
     tidetime_arr = NA,
-    tidetime_dep = NA
-    # ebb_w_arr = NA,
-    # ebb_w_dep = NA,
-    # flood_w_arr = NA,
-    # flood_w_dep = NA
+    tidetime_dep = NA,
+    ebb_w = NA,
+    flood_w = NA
   ) %>%
   filter(zone == "tidal")
+
+#lookup table
+concat_tij <- lapply(
+  metadata_tij$name,
+  function(x) get(paste(x, '_tij', sep = ""))
+)
+Proportion <- bind_rows(concat_tij) %>%
+  group_by(name, tij) %>%
+  summarise(
+    sec = mean(interval_sec, na.rm = TRUE)
+  ) %>%
+  pivot_wider(names_from = tij, values_from = sec) %>%
+  rename(
+    flood = LW,
+    ebb = HW
+  ) %>% #to proportions
+  mutate(
+    flood_p = flood / (flood + ebb),
+    ebb_p = ebb / (flood + ebb)
+  )
 
 for (i in 1:nrow(data_filter_tij)) {
   # choose the right tidal data
@@ -73,7 +93,12 @@ for (i in 1:nrow(data_filter_tij)) {
   ind_dep <- which(data_filter_tij$departure[i] %within% closest$interval)
   data_filter_tij$tidetime_arr[i] <- closest$Timestamp[ind_arr]
   data_filter_tij$tidetime_dep[i] <- closest$Timestamp[ind_dep]
-  data_filter_tij$ebb_w_arr[i]
+  data_filter_tij$ebb_w[i] <- Proportion$ebb_p[
+    Proportion$name == metadata_tij$name[ind]
+  ]
+  data_filter_tij$flood_w[i] <- Proportion$flood_p[
+    Proportion$name == metadata_tij$name[ind]
+  ]
   if (closest$tij[ind_arr] == "HW") {
     data_filter_tij$tide_arrival[i] <- "ebb"
     data_filter_tij$tidetime_arr[i] <- interval(
@@ -124,18 +149,20 @@ ggsave("./figures/Tide/tidal_zone.png")
 #######################################################################
 # statistical analysis (chi-squared test)
 #######################################################################
-# assumption: the proportions of ebb and flood tides are equal
+# assumption: flood is less abundantly present than ebb, so we need to coorect for this --> in data_filter_tij
+#heb ik voor alle detecties de proportie flood/ebb berekend door rekening te houden met de proportie flood/ebb in het dichtst
+#bijzijnde tij meetpunt
 Counts <- data_filter_tij %>%
   group_by(zone, tide_arrival) %>%
   summarise(count = n(), .groups = 'drop') %>%
   pivot_wider(names_from = zone, values_from = count, values_fill = 0)
+prop_sum <- c(
+  mean(data_filter_tij$ebb_w, na.rm = TRUE),
+  mean(data_filter_tij$flood_w, na.rm = TRUE)
+)
 
-chi_test <- chisq.test(x = Counts$tidal)
+chi_test <- chisq.test(x = Counts$tidal, p = prop_sum)
 
-#test assumption of equal proportions of ebb and flood tides
-#sum intervals of even rows
-
-#boxplot intervals
-#here I should remove outlier
-ggplot(zes01a_1066_tij) +
-  geom_boxplot(aes(x = tij, y = interval))
+#illustration of proportion flood/ebb
+ggplot(bnt01c_1066_tij) +
+  geom_boxplot(aes(x = tij, y = interval_sec))

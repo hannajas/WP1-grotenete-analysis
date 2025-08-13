@@ -44,9 +44,15 @@ Data collection and explorative analysis I
     For each location:
     + `\src\get_velocity_function.R:` Making use of waterlevel, discharge and H-A relations (save the data at `/interim`)
 * `/exploration_env_variables:` making some figures of the environmental data and do the preprocessing (save the data at `/interim`). For some datatypes also analyses:
+    + `\chemical_var.R:` preprocessing of salinity, turbidity and dissolved oxygen
+    + `\discharge.R:` preprocessing of discharge
+    + `\rainfall.R:` preprocessing of rainfall
+    + `\Watertemperature.R`: preprocessing of watertemperature (+ looking at correlations between measurements)
     + `\Circadian.R:` arrival/departure analysis
     + `\Tides.R:` arrival/departure analysis
     + `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
+    + `\metadata.R:`: processing metadata
+    + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities)
 * `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration_env_filter.csv`)
     + calulate the alterantive speed by incorporating the residence times at the receivers in the swimtime
         - `\src\calculate_speed_function.R:` function to calculate the speed for a dataframe with data from one eel

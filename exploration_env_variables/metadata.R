@@ -1,3 +1,9 @@
+# load raw metadata
+# preprocessing: add resolution, station coordinates for rainfall measurements, wether a station is located at a receiver
+# write to /interim folder
+# by Hanna Jaspaert
+# Hanna.Jaspaert@UGent.be
+
 library(wateRinfo)
 library(tidyverse)
 library(rvest)

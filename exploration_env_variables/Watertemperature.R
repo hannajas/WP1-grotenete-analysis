@@ -1,3 +1,7 @@
+# Preprocessing watertemperature data + look at correlation between temperature measurements
+# by Hanna Jaspaert
+# Hanna.Jaspaert@UGent.be
+
 library(ggplot2)
 library(patchwork)
 library(lubridate)
@@ -8,9 +12,14 @@ metadata_Tw <- filter(metadata, metadata$type == "Tw")
 n <- dim(metadata_Tw)[1]
 
 for (i in 1:n) {
-    path <- paste('./data/raw/temperature/',metadata_Tw$name[i],'_Tw.csv', sep ="")
-    temp <- read_csv(path)
-    assign(paste(metadata_Tw$name[i],'_Tw', sep =""), temp)
+  path <- paste(
+    './data/raw/temperature/',
+    metadata_Tw$name[i],
+    '_Tw.csv',
+    sep = ""
+  )
+  temp <- read_csv(path)
+  assign(paste(metadata_Tw$name[i], '_Tw', sep = ""), temp)
 }
 
 # PRE PROCESSING!!!
@@ -26,11 +35,16 @@ L07_077_Tw$Value <- as.numeric(L07_077_Tw$Value)
 #rup02e_SF_1066_Tw$Timestamp <- ymd_hms(rup02e_SF_1066_Tw$Timestamp)
 
 # remove "...2" column out of zes24a_SF_1066_Tw.csv
-zes24a_SF_1066_Tw <- zes24a_SF_1066_Tw[,-c(2)]
+zes24a_SF_1066_Tw <- zes24a_SF_1066_Tw[, -c(2)]
 
 for (i in 1:n) {
-    path <- paste('./data/interim/processed/',metadata_Tw$name[i],'_Tw.csv', sep ="")
-    write.csv(get(paste(metadata_Tw$name[i],'_Tw', sep ="")), path)
+  path <- paste(
+    './data/interim/processed/',
+    metadata_Tw$name[i],
+    '_Tw.csv',
+    sep = ""
+  )
+  write.csv(get(paste(metadata_Tw$name[i], '_Tw', sep = "")), path)
 }
 
 
@@ -43,35 +57,45 @@ Tw <- Tw %>%
   rename(
     Grote_nete_geel = Value.x,
     Rupel = Value.y
-    )
+  )
 
 # plot one temperature
-g <- ggplot()
-g <- g + geom_line(aes(Timestamp, Value), data = L07_077_Tw[(L07_077_Tw$Timestamp>="2019-12-10"&L07_077_Tw$Timestamp<="2019-12-16"),], colour = "green")
-g <- g + theme(legend.position="top")
-g <- g + scale_x_datetime(date_breaks  ="1 day")
-g <- g + theme(axis.text.x = element_text(size = 14, colour = "black", angle=90),axis.title.x=element_text(size=16),axis.title.y=element_text(size=16), axis.text.y = element_text(size = 14))
+g <- ggplot() +
+  geom_line(
+    aes(Timestamp, Value),
+    data = L07_077_Tw[
+      (L07_077_Tw$Timestamp >= "2019-12-10" &
+        L07_077_Tw$Timestamp <= "2019-12-16"),
+    ],
+    colour = "green"
+  ) +
+  theme(legend.position = "top") +
+  scale_x_datetime(date_breaks = "1 day") +
+  theme(
+    axis.text.x = element_text(size = 14, colour = "black", angle = 90),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    axis.text.y = element_text(size = 14)
+  )
 
 
 # overview of values
-g <- ggplot()
-g <- g + geom_line(aes(Timestamp, Grote_nete_geel), data = Tw, colour = "green")
-g <- g + geom_line(aes(Timestamp, Rupel), data = Tw, colour="blue")
-g <- g + theme(legend.position="top")
+g <- ggplot() +
+  geom_line(aes(Timestamp, Grote_nete_geel), data = Tw, colour = "green") +
+  geom_line(aes(Timestamp, Rupel), data = Tw, colour = "blue") +
+  theme(legend.position = "top")
 
 #correlation plot
-g1 <- ggplot()
-g1 <- g1 + geom_line(aes(Rupel, Grote_nete_geel), data = Tw, colour="blue")
+g1 <- ggplot() +
+  geom_line(aes(Rupel, Grote_nete_geel), data = Tw, colour = "blue")
 
 #correlation
-cor(Tw$Grote_nete_geel, Tw$Rupel, use="complete.obs")
+cor(Tw$Grote_nete_geel, Tw$Rupel, use = "complete.obs")
 
 #correlation test -> no need! we are not looking of the 'population parameter' for this 'sample' of date
 
 ## testing the assumptions
-g2 <- ggplot()
-g2 <- g2 + qqnorm(Tw$Grote_nete_geel)
-g2 <- g2 + qqline(Tw$Grote_nete_geel)
+g2 <- qqline(Tw$Grote_nete_geel)
 # --> temperature is not independent (time dependent) AND not normally distributed!
 
-cor.test(Tw$Grote_nete_geel, Tw$Rupel, use="complete.obs")#houdt geen steek want er wordt niet aan de assumpties voldaan
+cor.test(Tw$Grote_nete_geel, Tw$Rupel, use = "complete.obs") #houdt geen steek want er wordt niet aan de assumpties voldaan
