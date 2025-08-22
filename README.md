@@ -54,7 +54,7 @@ Data collection and explorative analysis I
     + `\metadata.R:`: processing metadata
     + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities)
 * `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration_env_filter.csv`)
-    + calulate the alterantive speed by incorporating the residence times at the receivers in the swimtime
+    + calculate the alternative speed by incorporating the residence times at the receivers in the swimtime
         - `\src\calculate_speed_function.R:` function to calculate the speed for a dataframe with data from one eel
     + recalcutate the smooth eel track (remove timelimit for which a new track was started)
     + 'downstream' column: calculate wheter migration is downstream
@@ -67,7 +67,13 @@ Trajectory smoothing
     + regularisation of trajectories(crawl package) (GIVES ERRORS FOR NOW)
     + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv` (now: resolution = 15 min)
 
-Data collection and explorative analysis II
+Clustering (resting + resident) Vs migratory
+* `Clustering.R:` kmeans (different options were tested BUT log raw data, seperate eels and k=2 works best!)
+    + working with interpolated data --> even more skewed data
+    + silhouette width method + biological knowledge --> $k = 2$
+    + looking at seperate eels (less false resident in straightforward migration part)
+
+Explorative analysis II
 * `link_env_variables.R:` linking the environmental variables with the telemetry data
     
     RAW DATA For each type of environmental data (adding to `/interim/migration_env_filter.csv`):
@@ -86,7 +92,10 @@ Data collection and explorative analysis II
             - When datatype = "Q": because of the segments --> discontinuities can occur
     + saved in `/interim/migration_env_inter.csv`
 
-* `Q_as_trigger.R:` Is Q the trigger for migration if the other environmental conditions are met?
+* Onset of migration
+    + `onset_migration.R:` Is Q the trigger for migration if the other environmental conditions are met?
+
+
 * `/visualisation:`
     + `create_eel_track_env_var_plot.R:` Each eel its trajectory plotted together with an environmental variable
     + `correlation_plots.R:` Correlations (saved at `/figures/correlations/`)
@@ -94,17 +103,11 @@ Data collection and explorative analysis II
         - between the environmental variables 
     + `Figures_for_presentations.R:` Additional figures for presenations
 
-Labeling
-* `Clustering.R:` kmeans (different options were tested BUT raw data, seperate eels and k=2 works best!)
-    + working with interpolated data --> even more skewed data
-    + silhouette width method + biological knowledge --> $k = 2$
-    + looking at seperate eels (less false resident in straightforward migration part)
+Try outs
 * `BCPA.R:`Behavioural change point analysis
 * `trajectory_analysis.R:` Lavielle and GUEGUEN analysis
-
-Dynamic brownian bridge models
 * `dBBMM.R`
-    + setting the actel input. Work with receiver locations projected on the river center.
+    + Dynamic brownian bridge models: setting the actel input. Work with receiver locations projected on the river center.
 
 
 ### Figures
@@ -116,12 +119,16 @@ Dynamic brownian bridge models
 
 
 ## Bugs
-* `align_resolutions_function`lijkt nog niet de werken voor rainfall ("R")
+* `align_resolutions_function` lijkt nog niet de werken voor rainfall ("R")
 * `inverse_distance_function.R` geeft een warning die gaat over het find_receiver deel (in denk dat het 2de argument) in telemetry_data$temp <- replace( niet even lang is ander waar het het zou moeten worden ingevuld)
+* `link_env_variables.R`: data_inter_env$photoperiod is niet goed berekend!
 
 ## Order of migration csv
+Raw
 * `preprocessing_INBO_data.R:` starting from `/raw/migration.csv` and saved at `/interim/migration_env_filter.csv`
 * `link_env_variables.R:` (adding to `/interim/migration_env_filter.csv`)
 * `Clustering.R:` (adding to `/interim/migration_env_filter.csv`)
 
-
+Interpolation
+* `Smoothing.R:` starting from `/interim/migration_env_filter.csv` and saved at `/interim/migration_inter.csv`
+* `link_env_variables.R:` load `/interim/migration_inter.csv` saved at `/interim/migration_env_inter.csv`

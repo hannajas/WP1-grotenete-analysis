@@ -463,10 +463,10 @@ data_inter <- data_inter %>%
       fromLast = TRUE,
       na.rm = FALSE
     ),
-    cluster = as.factor(zoo::na.locf(cluster, fromLast = TRUE, na.rm = FALSE))
-    #station_name = zoo::na.locf(station_name, fromLast = TRUE, na.rm = FALSE)
+    cluster = as.factor(zoo::na.locf(cluster, fromLast = TRUE, na.rm = FALSE)),
+    zone = as.factor(zoo::na.locf(zone, fromLast = TRUE, na.rm = FALSE))
   ) %>%
   ungroup()
 
 #save as csv
-write_csv(data_inter, "./data/interim/migration_inter_test.csv")
+write_csv(data_inter, "./data/interim/migration_inter.csv")

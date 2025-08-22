@@ -383,36 +383,38 @@ p <- env_data %>%
 # AFTER CLUSTERING
 ##############################################################################################
 variables <- c(
-  "logQ",
+  #"logQ",
   "delta_Q",
   "Tw",
   "delta_Tw",
-  "S",
-  "turb",
-  "O",
+  #"S",aan als tidal data ook in rekening
+  #"turb",
+  #"O",
   "V",
   "photoperiod",
   "speed_m_s"
 ) #OR some individually: bv. "Q"
 
 #for the raw data
-#data_cluster <- read_csv(
-#  './data/interim/migration_env_filter_kmeans.csv',
-#  show_col_types = FALSE
-#)
+data_cluster <- read_csv(
+ './data/interim/migration_env_filter.csv',
+ show_col_types = FALSE
+)
 
 #for the interpolated data
-data_cluster <- read_csv(
-  './data/interim/migration_env_inter.csv',
-  show_col_types = FALSE
-)
+# data_cluster <- read_csv(
+#   './data/interim/migration_env_inter.csv',
+#   show_col_types = FALSE
+# )
 data_cluster <- data_cluster %>%
-  mutate(cluster = as.factor(cluster), logQ = log(Q))
+  mutate(cluster = as.factor(cluster), logQ = log(Q)) %>%
+  filter(zone == "non-tidal")
 data_cluster$label <- recode(
   data_cluster$cluster,
   `1` = "resident",
   `2` = "migratory"
 )
+
 
 #make a column 'keep' to keep only the first part of the resident phase
 only_first_resident <- data_cluster %>%
@@ -421,7 +423,7 @@ only_first_resident <- data_cluster %>%
     first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE)
   ) %>%
   mutate(
-    keep = case_when(
+    label = case_when(
       label == "migratory" ~ TRUE,
       label == "resident" &
         is.finite(first_migratory_idx) &
@@ -472,6 +474,7 @@ data_combined <- bind_rows(data_cluster_long, only_first_resident_long)
 
 # Remove duplicate migratory rows from only_first_resident_long
 data_combined <- data_combined %>%
+  filter(!(source == "all data" & label == "resident"))
   distinct(label, value, variable, source, .keep_all = TRUE) #als je zelfde datarij hebt en er staat ook 2 keer "all data" dan heb je een migratory van only_first_resident en data_cluster --> verwijder er 1
 
 # Plot
@@ -479,18 +482,22 @@ p <- ggplot(data_combined, aes(x = label, y = value, fill = source)) + #choose t
   #scale_fill_manual(values = c("all" = "blue", "first_resident" = "red"), alpha = 0.5) +
   geom_boxplot(position = "dodge") +
   facet_wrap(~variable, nrow = 1, scales = "free") +
-  style
+  style + 
+  theme(legend.position = "none")
 windows(width = 16, height = 5)
 plot(p)
+#ggsave("./figures/Clustering/boxplot_labelled_non_tidal_inter.png",  height = 10,
+#  width = 20)
+
 
 # ggpairs plot
 p <- data_cluster %>%
-  dplyr::select(c("Tw","O", "logQ","S","V","turb","cluster")) %>%#remove NAs
+  dplyr::select(c("Tw", "O", "logQ", "S", "V", "turb", "cluster")) %>% #remove NAs
   GGally::ggpairs(ggplot2::aes(colour = cluster))
 
-  ggsave(
-    p,
-    filename = "./figures/correlations/ggpairs_inter_5min.png",
-    height = 10,
-    width = 20
-      )
+ggsave(
+  p,
+  filename = "./figures/correlations/ggpairs_inter_5min.png",
+  height = 10,
+  width = 20
+)
