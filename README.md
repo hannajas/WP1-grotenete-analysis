@@ -46,7 +46,7 @@ Data collection and explorative analysis I
 * `/exploration_env_variables:` making some figures of the environmental data and do the preprocessing (save the data at `/interim`). For some datatypes also analyses:
     + `\chemical_var.R:` preprocessing of salinity, turbidity and dissolved oxygen
     + `\discharge.R:` preprocessing of discharge
-    + `\rainfall.R:` preprocessing of rainfall
+    + `\rainfall.R:` preprocessing of rainfall. Later in the analysis the accumulated rainfall will be used (release time as startingpoint)
     + `\Watertemperature.R`: preprocessing of watertemperature (+ looking at correlations between measurements)
     + `\Circadian.R:` arrival/departure analysis
     + `\Tides.R:` arrival/departure analysis
@@ -69,12 +69,13 @@ Trajectory smoothing
 
 Clustering (resting + resident) Vs migratory
 * `Clustering.R:` kmeans (different options were tested BUT log raw data, seperate eels and k=2 works best!)
-    + working with interpolated data --> even more skewed data
+    + working with interpolated data --> even more skewed data (in the other direction)
     + silhouette width method + biological knowledge --> $k = 2$
     + looking at seperate eels (less false resident in straightforward migration part)
+    + first value is NA (for each eel)
 
 Explorative analysis II
-* `link_env_variables.R:` linking the environmental variables with the telemetry data
+* `link_env_variables.R:` linking the environmental variables with the telemetry data (R becomes the accumulated data)
     
     RAW DATA For each type of environmental data (adding to `/interim/migration_env_filter.csv`):
 
@@ -82,6 +83,7 @@ Explorative analysis II
     + in `\src\concat_all_env_var_function.R:` de outputs van `concat_env_var_function.R` voor verschillende meetlocaties van de zelfde variabele worden gebundeld.
     + `\src\inverse_distance_function.R:` get one value out of the different datapoints by performing inverse distance weighting for each point in the migration trajectory
         - When datatype = "Q", there are 3 segments defined. To link environmental data with the receivers each receiver can only get information from data-point that are located whitin the same segment.
+    + Q is normalised over traject
 
     INTERPOLATED DATA
 
@@ -93,7 +95,10 @@ Explorative analysis II
     + saved in `/interim/migration_env_inter.csv`
 
 * Onset of migration
-    + `onset_migration.R:` Is Q the trigger for migration if the other environmental conditions are met?
+    + `onset_migration.R:` Resident Vs migration: Is there a difference in environmental variables? Are there short-term triggers to onset migration?
+        - data selection: non-tidal, remove the first day after release
+        - Boxplot to see difference in conditions
+        - Boxplots to see triggers
 
 
 * `/visualisation:`

@@ -54,7 +54,7 @@ align_resolutions_function <- function(
       by = target_resolution
     )
 
-    if (original_resolution > target_resolution) {
+    if (original_resolution < target_resolution) {
       # Upsampling
       env_xts_resampled <- xts::merge.xts(env_xts, xts(, full_time_index))
 

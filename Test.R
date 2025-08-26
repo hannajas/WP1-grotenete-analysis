@@ -66,22 +66,6 @@ for (i in 2:length(seq_af) - 1) {
 dev.off()
 
 
-######################################
-data_inter_env$station_name == metadata_filter$receiver[1]
-
-find_receiver <- data_inter_env$station_name == metadata_filter$receiver[1]
-test <- replace(find_receiver, is.na(find_receiver), FALSE)
-
-test <- replace(
-  telemetry_data$temp,
-  telemetry_data$station_name == metadata_filter$receiver[i],
-  unlist(env_data[
-    telemetry_data$station_name == metadata_filter$receiver[i],
-    i
-  ])
-)
-
-
 #######################################################################################
 #interpolation
 #######################################################################################
@@ -114,3 +98,13 @@ data_test <- left_join(
   ],
   by = c("tag_serial_number" = "tag_serial_number", "date" = "rounded_date")
 )
+
+
+
+#######################################################################################
+#interpolation of env data
+#######################################################################################
+variables <- c("Tw", "Q", "photoperiod", "R", "S", "turb", "O", "V")
+env_data_Tw <- concat_all_env_vars(data, "Tw", metadata)
+p <- 1
+test <- inverse_distance(data, env_data_Tw, metadata, p, "Tw")

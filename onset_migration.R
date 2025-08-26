@@ -21,31 +21,32 @@ style <- theme(
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
 #inter
-data_env <- read.csv(
-  "./data/interim/migration_env_inter.csv",
-  header = TRUE,
-  sep = ","
-) %>%
-  mutate(
-    arrival = as.POSIXct(arrival, tz = "UTC", truncated = 3),
-    departure = as.POSIXct(departure, tz = "UTC", truncated = 3),
-    date = as.POSIXct(date, tz = "UTC", truncated = 3)
-  ) %>%
-  group_by(tag_serial_number) %>%
-  filter(date > date[[1]] + days(1))
+# data_env <- read.csv(
+#   "./data/interim/migration_env_inter.csv",
+#   header = TRUE,
+#   sep = ","
+# ) %>%
+#   mutate(
+#     arrival = as.POSIXct(arrival, tz = "UTC", truncated = 3),
+#     departure = as.POSIXct(departure, tz = "UTC", truncated = 3),
+#     date = as.POSIXct(date, tz = "UTC", truncated = 3)
+#   ) %>%
+#   group_by(tag_serial_number) %>%
+#   filter(date > date[[1]] + days(1))
 
 #raw
-# data_env <- read_csv(
-#   './data/interim/migration_env_filter.csv',
-#   show_col_types = FALSE
-# ) %>%
-#   group_by(tag_serial_number) %>%
-#   filter(arrival > arrival[[1]] + days(1))
+data_env <- read_csv(
+  './data/interim/migration_env_filter.csv',
+  show_col_types = FALSE
+) %>%
+  group_by(tag_serial_number) #%>%
+  #filter(arrival > arrival[[1]] + days(1)) #DIT WERKT NIET! zo valt het eerste
+  #datapunt volledig weg (dit is veel meer dan 1 dag dat je wegsmeet!!)
 
 #als data temp een kolom data bevat
 
 data_env <- data_env %>%
-  filter(zone == "non-tidal") %>% # | zone == "transition"
+  filter(zone == "non-tidal") %>% #| zone == "transition") %>%
   filter(
     !tag_serial_number %in%
       c(1294169, 1305785, 1171747, 1171751, 1294168, 1294172)
@@ -78,16 +79,19 @@ data_env <- data_env %>%
 #Conditions
 ######################################################
 variables <- c(
-  #"logQ",
-  "delta_Q",
+  "speed_m_s",
+  "Q",
+  #"delta_Q",#DELTA zegt niets bij raw data (delta over versch tijdspannes)
   "Tw",
-  "delta_Tw",
+  #"delta_Tw",
   #"S",aan als tidal data ook in rekening
   #"turb",
   #"O",
   "V",
-  "photoperiod",
-  "speed_m_s"
+  "photoperiod"
+  #"speed_m_s",
+  #"R",
+  #"delta_R"
 ) #OR some individually: bv. "Q"
 
 data_env_long <- data_env %>%
@@ -96,7 +100,8 @@ data_env_long <- data_env %>%
     names_to = "variable",
     values_to = "value"
   ) %>%
-  filter(!is.na(cluster)) # filter out NA values
+  filter(!is.na(cluster)) %>% # filter out NA values %>%
+  mutate(variable = factor(variable, levels = c("speed_m_s","photoperiod","Tw", "Q", "V")))
 
 p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose the colors
   #scale_fill_manual(values = c("all" = "blue", "first_resident" = "red"), alpha = 0.5) +
@@ -106,12 +111,12 @@ p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose th
   theme(legend.position = "none")
 windows(width = 16, height = 5)
 plot(p)
-#ggsave("./figures/Clustering/boxplot_labelled_non_tidal.png", height = 10, width = 20)
+ggsave("./figures/Clustering/boxplot_labelled_non_tidal.png", height = 10, width = 20)
 
 ######################################################
 #Short-term trigger
 ######################################################
-variable <- "Q"
+variable <- "Q"#Tw?R?
 
 # source functions
 source("./src/align_resolutions_function.R")
@@ -221,3 +226,15 @@ plot(g)
 #     y = "Q values"
 #   ) +
 #   theme_minimal()
+
+
+
+######################################################
+# Time of onset
+######################################################
+p <- ggplot(data_eels, aes(x = hour(arrival))) +
+  geom_bar(aes(fill = arrival_circadian)) +
+  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
+  labs(title = "Arrivals at receicers") + #remove legend
+  theme(legend.position = "none") +
+  facet_wrap(~zone)
