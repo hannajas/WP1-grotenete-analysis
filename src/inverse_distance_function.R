@@ -63,7 +63,8 @@ inverse_distance <- function(telemetry_data, env_data, metadata, p, data_type) {
     if (!is.na(metadata_filter$receiver[i])) {
       find_receivers <- telemetry_data$station_name ==
         metadata_filter$receiver[i]
-      find_receivers <- replace(#replace NA to FALSE
+      find_receivers <- replace(
+        #replace NA to FALSE
         find_receivers,
         is.na(find_receivers),
         FALSE
