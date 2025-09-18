@@ -80,10 +80,17 @@ g <- ggplot() +
 
 
 # overview of values
-g <- ggplot() +
-  geom_line(aes(Timestamp, Grote_nete_geel), data = Tw, colour = "green") +
-  geom_line(aes(Timestamp, Rupel), data = Tw, colour = "blue") +
-  theme(legend.position = "top")
+Tw_long <- Tw %>%
+  dplyr::select(Timestamp, Grote_nete_geel, Rupel) %>%
+  pivot_longer(cols = c(Grote_nete_geel, Rupel), names_to = "Location", values_to = "Temperature")
+
+g <- ggplot(Tw_long, aes(x = Timestamp, y = Temperature, colour = Location)) +
+  geom_line() +
+  theme(legend.position = "top",     legend.text = element_text(size = 18),      # bigger legend text
+    legend.title = element_text(size = 20),
+    axis.title = element_text(size = 18)) +#bigger legend
+  labs(colour = "Location")
+ggsave(g, file = "./figures/Temperature/Rupel_Vs_Nete.png")
 
 #correlation plot
 g1 <- ggplot() +
@@ -95,7 +102,11 @@ cor(Tw$Grote_nete_geel, Tw$Rupel, use = "complete.obs")
 #correlation test -> no need! we are not looking of the 'population parameter' for this 'sample' of date
 
 ## testing the assumptions
-g2 <- qqline(Tw$Grote_nete_geel)
+qqnorm(Tw$Grote_nete_geel)
+qqline(Tw$Grote_nete_geel)
+ggplot(Tw, aes(x = Rupel)) +
+  geom_histogram(bins = 30, fill = "blue", alpha = 0.5) +
+  labs(title = "Histogram of Tw", x = "Tw", y = "Count")
 # --> temperature is not independent (time dependent) AND not normally distributed!
 
 cor.test(Tw$Grote_nete_geel, Tw$Rupel, use = "complete.obs") #houdt geen steek want er wordt niet aan de assumpties voldaan

@@ -33,7 +33,7 @@ for (var in variables) {
     next
   }
   if (var == "Q") {
-    env_data_Q_norm <- env_data_Q / colMeans(env_data_Q, na.rm = TRUE)
+    env_data_Q_norm <- env_data_Q #/ colMeans(env_data_Q, na.rm = TRUE)
     data$Q <- inverse_distance(data, env_data_Q_norm, metadata, p, "Q") # INVERSE DISTANCE WEIGHTING
     next
   }

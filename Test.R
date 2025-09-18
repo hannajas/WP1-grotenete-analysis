@@ -100,11 +100,23 @@ data_test <- left_join(
 )
 
 
+####################################################################################
+# 2d to 1d
+####################################################################################
+#load shapefile
 
-#######################################################################################
-#interpolation of env data
-#######################################################################################
-variables <- c("Tw", "Q", "photoperiod", "R", "S", "turb", "O", "V")
-env_data_Tw <- concat_all_env_vars(data, "Tw", metadata)
-p <- 1
-test <- inverse_distance(data, env_data_Tw, metadata, p, "Tw")
+grotenete <- st_read("./data/geo_data/grotenete_zeeschelde.shp")
+grotenete <- st_transform(grotenete, crs = 31370)
+x <- 148246.11
+y <- 198137.25
+point <- st_sfc(st_point(c(x, y)), crs = st_crs(grotenete))
+dist_to_river <- st_distance(point, grotenete, dist_fun =)
+distance_from_source(
+  x = x,
+  y = y,
+  river_shapefile = "./data/geo_data/grotenete_zeeschelde.shp",
+  crs = 31370
+)
+#plot grotenete and point
+plot(st_geometry(grotenete), col = 'lightblue')
+plot(st_geometry(point), col = 'red', pch = 19, cex = 2, add = TRUE)

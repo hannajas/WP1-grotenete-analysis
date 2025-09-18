@@ -22,6 +22,10 @@ zes00a_1066_Q <- read_csv(
 data_eels <- read_csv(
   './data/interim/migration_env_filter.csv',
   show_col_types = FALSE
+) %>%
+filter(
+  !tag_serial_number %in%
+    c(1171747, 1171751, 1294168, 1294172)
 )
 circadian <- getSunlightTimes(
   as.Date(zes00a_1066_Q$Timestamp),
@@ -80,7 +84,7 @@ data_eels$night_w_arr <- unlist(lapply(data_eels$arrival, function(x) {
 data_eels$night_w_dep <- unlist(lapply(data_eels$departure, function(x) {
   circadian$w_night[which(circadian$date == floor_date(x, unit = "day"))]
 }))
-
+#write.csv(data_eels, './data/interim/migration_circadian.csv', row.names = FALSE)
 
 # plot the arrivals
 p1 <- ggplot(data_eels, aes(x = hour(arrival))) +

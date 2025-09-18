@@ -26,6 +26,9 @@ path <- paste(
   sep = ""
 )
 write.csv(get(paste(metadata_p$name[1], '_photoperiod', sep = "")), path)
+photoperiod_photoperiod <- read_csv(
+  "./data/interim/processed/photoperiod_photoperiod.csv"
+)
 
 p <- ggplot(data = env_data, mapping = aes(x = date, y = photoperiod)) +
   geom_point() +
@@ -34,3 +37,12 @@ print(p)
 #h <- ggplot()
 #h <- h + geom_point(aes(id, photoperiod), data = env_data, shape = 16, size = 5)
 #View(h)
+
+#histogram of photoperiod
+ggplot(photoperiod_photoperiod, aes(x = photoperiod)) +
+  geom_histogram(bins = 30, fill = "blue", alpha = 0.5) +
+  labs(
+    title = "Histogram of Photoperiod",
+    x = "Photoperiod (minutes)",
+    y = "Count"
+  )
