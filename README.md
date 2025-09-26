@@ -49,7 +49,7 @@ Data collection and explorative analysis I
     + `\rainfall.R:` preprocessing of rainfall. Later in the analysis the accumulated rainfall will be used (release time as startingpoint)
     + `\Watertemperature.R`: preprocessing of watertemperature (+ looking at correlations between measurements)
     + `\Circadian.R:` arrival/departure analysis
-    + `\Tides.R:` arrival/departure analysis
+    + `\Tides.R:` arrival/departure analysis. ebb/flood at receiver was decided based on closest measuring point
     + `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
     + `\metadata.R:`: processing metadata
     + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities)

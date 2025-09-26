@@ -46,10 +46,44 @@ for (i in 1:n) {
 
 ###########################################################################################################
 #add two columns to the data_eels dataframe: tide_arrival, tide_departure
+###########################################################################################################
+
 data_filter <- read_csv(
   './data/interim/migration_env_filter.csv',
   show_col_types = FALSE
-)
+) %>%
+  group_by(tag_serial_number) %>%
+  filter(
+    !tag_serial_number %in%
+      c(1294169, 1305785, 1171747, 1171751, 1294168, 1294172)
+  ) %>%
+  mutate(
+    label = ifelse(
+      cluster == 1,
+      "resident/resting",
+      ifelse(cluster == 2, "migratory", NA)
+    ) ) %>%
+  mutate(
+    first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
+    year = year(arrival[1])
+  ) %>%
+  mutate(
+    label = case_when(
+      label == "resident/resting" &
+        row_number() < first_migratory_idx ~
+        "resident",
+      label == "resident/resting" &
+        row_number() > first_migratory_idx ~
+        "resting",
+      label == "migratory" ~ "migratory",
+      is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~ "resident"
+    )
+  ) %>%
+  ungroup()
+
+
+
+
 data_filter_tij <- data_filter %>%
   mutate(
     tide_arrival = NA,

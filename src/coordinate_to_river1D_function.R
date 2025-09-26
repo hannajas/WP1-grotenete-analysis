@@ -56,8 +56,6 @@ get.distance.from.source <- function(raster, XY) {
   rownames(cst.dst.arr) <- names
   colnames(cst.dst.arr) <- names
   out <- as.data.frame(cst.dst.arr) %>%
-    #select all rows that start with "rel"
     select(starts_with("rel"))
-  out <- out[!grepl("^rel", rownames(out)), ]
   return(out)
 }

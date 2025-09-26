@@ -65,41 +65,6 @@ for (i in 2:length(seq_af) - 1) {
 }
 dev.off()
 
-
-#######################################################################################
-#interpolation
-#######################################################################################
-m <- 8
-inter.temp <- data_inter.eel[[m]]
-data.temp <- data.eel.filtered[[m]]
-
-original_times <- data.temp$rounded_date
-new_times <- inter.temp$date
-
-#is_original <- floor_date(new_times, unit = resolution_s) %in% floor_date(original_times, unit = resolution_s) # check if the date in inter.temp is in the original data
-is_original <- new_times %in% original_times
-
-row_ids <- which(data_inter$tag_serial_number == names(data_inter.eel)[m]) #select the row id's in data_inter of id k
-
-data_inter$is_original[row_ids] <- as.integer(is_original)
-
-
-View(data_inter[data_inter$tag_serial_number == names(data_inter.eel)[7], ])
-
-
-data_test <- left_join(
-  data_inter[
-    data_inter$tag_serial_number == names(data_inter.eel)[m],
-    c("x", "y", "date", "dist", "dt", "tag_serial_number")
-  ],
-  data[
-    data$tag_serial_number == names(data_inter.eel)[m],
-    setdiff(names(data), c("middledate", "x", "y"))
-  ],
-  by = c("tag_serial_number" = "tag_serial_number", "date" = "rounded_date")
-)
-
-
 ####################################################################################
 # 2d to 1d
 ####################################################################################
@@ -120,3 +85,116 @@ distance_from_source(
 #plot grotenete and point
 plot(st_geometry(grotenete), col = 'lightblue')
 plot(st_geometry(point), col = 'red', pch = 19, cex = 2, add = TRUE)
+
+
+
+####################################################################################
+# Circadian rhythm
+####################################################################################
+# Comparing the amount of detections in function of the circadian rhythm (similar as in Keirsebelik et al. 2025)
+# by Hanna Jaspaert
+# Hanna.Jaspaert@UGent.be
+
+library(suncalc)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(tidyverse)
+library(patchwork)
+library(stats)
+
+# Function to calculate the circadian rhythm
+source('./src/circadian_rhythm_function.R')
+
+# Load data
+zes00a_1066_Q <- read_csv(
+  './data/interim/processed/zes00a_1066_Q.csv',
+  show_col_types = FALSE
+) #just for the starting and ending time
+data_eels <- read_csv(
+  './data/interim/migration_env_filter.csv',
+  show_col_types = FALSE
+) %>%
+  filter(
+    !tag_serial_number %in%
+      c(1171747, 1171751, 1294168, 1294172)
+  ) %>%
+  mutate(
+    label = ifelse(
+      cluster == 1,
+      "resident/resting",
+      ifelse(cluster == 2, "migratory", NA)
+    )
+  ) %>%
+  mutate(
+    first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
+    year = year(arrival[1])
+  ) %>%
+  mutate(
+    label = case_when(
+      label == "resident/resting" &
+        row_number() < first_migratory_idx ~
+        "resident",
+      label == "resident/resting" &
+        row_number() > first_migratory_idx ~
+        "resting",
+      label == "migratory" ~ "migratory",
+      is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~ "resident"
+    )
+  ) %>%
+  ungroup() %>%
+  filter(label == "migratory" | label == "resting")
+
+
+circadian <- getSunlightTimes(
+  as.Date(zes00a_1066_Q$Timestamp),
+  lat = 51.216667,#same location as daylength
+  lon = 4.6,
+  keep = c("nightEnd", "sunrise", "sunset", "night")
+)
+
+# Define boundaries and phase names
+phase_starts <- c("nightEnd", "sunrise", "sunset")
+phase_ends   <- c("sunrise", "sunset", "night")
+phase_names  <- c("dawn", "day", "dusk")
+
+# For each day the duration of each phase
+weights <- map2(phase_starts, phase_ends, ~ 
+  as.duration(circadian[[.y]] - circadian[[.x]]) / ddays(1)
+)
+circadian[paste0("w_", phase_names)] <- weights
+circadian$w_night <- 1 - rowSums(circadian[paste0("w_", phase_names)])
+circadian$w_twilight <- circadian$w_dawn + circadian$w_dusk
+
+# determine for each detection in which circadian phase it falls by making use of circadian_rhythm function
+data_eels <- data_eels %>%
+  mutate(
+    arrival_circadian = unlist(lapply(
+      data_eels$arrival,
+      circadian_rhythm,
+      circadian = circadian
+    )),
+    departure_circadian = unlist(lapply(
+      data_eels$departure,
+      circadian_rhythm,
+      circadian = circadian
+    ))
+  )
+
+
+# calculate $dawn_arr = P("dawn"| arrival = date x) (TODO write shorter)
+periods <- c("dawn", "day", "dusk", "night")
+events  <- c("arrival", "departure")
+
+# Create all combinations of periods and events
+grid <- expand.grid(period = periods, event = events, stringsAsFactors = FALSE)
+
+# Iterate functionally
+walk2(grid$period, grid$event, function(p, e) {
+  col_name <- paste0(p, "_w_", substr(e, 1, 3))   # e.g. "dawn_w_arr"
+  data_eels[[col_name]] <<- map_dbl(data_eels[[e]], function(x) {
+    circadian[[paste0("w_", p)]][circadian$date == floor_date(x, "day")]
+  })
+})
+#write.c

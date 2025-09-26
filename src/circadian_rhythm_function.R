@@ -2,7 +2,7 @@
 # by Hanna Jaspaert
 # Hanna.Jaspaert@UGent.be
 
-circadian_rhythm <- function(date, circadian) {
+circadian_rhythm <- function(date, circadian, twilight) {
   # Get the circadian data for the given date
   circadian$date <- ymd_hms(circadian$date, truncated = 3)
   n_row <- which(circadian$date == floor_date(date, unit = "day"))
@@ -15,7 +15,11 @@ circadian_rhythm <- function(date, circadian) {
     time_of_day >= circadian$nightEnd[n_row] &
       time_of_day < circadian$sunrise[n_row]
   ) {
-    return("dawn")
+    if (twilight) {
+      return("twilight")
+    } else {
+      return("dawn")
+    }
   } else if (
     time_of_day >= circadian$sunrise[n_row] &
       time_of_day < circadian$sunset[n_row]
@@ -25,7 +29,11 @@ circadian_rhythm <- function(date, circadian) {
     time_of_day >= circadian$sunset[n_row] &
       time_of_day < circadian$night[n_row]
   ) {
-    return("dusk")
+    if (twilight) {
+      return("twilight")
+    } else {
+      return("dusk")
+    }
   } else {
     return("night")
   }

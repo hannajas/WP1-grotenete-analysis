@@ -1,4 +1,5 @@
-# Comparing the amount of detections in function of the circadian rhythm (similar as in Keirsebelik et al. 2025)
+# Comparing the amount of detections in function of the circadian rhythm
+# (similar as in Keirsebelik et al. 2025)
 # by Hanna Jaspaert
 # Hanna.Jaspaert@UGent.be
 
@@ -10,80 +11,112 @@ library(tidyr)
 library(tidyverse)
 library(patchwork)
 library(stats)
+library(purrr)
 
 # Function to calculate the circadian rhythm
 source('./src/circadian_rhythm_function.R')
 
-# Load data
+# Load data --------------------------------------------------------------
 zes00a_1066_Q <- read_csv(
   './data/interim/processed/zes00a_1066_Q.csv',
   show_col_types = FALSE
-) #just for the starting and ending time
+)
+
 data_eels <- read_csv(
   './data/interim/migration_env_filter.csv',
   show_col_types = FALSE
 ) %>%
-filter(
-  !tag_serial_number %in%
-    c(1171747, 1171751, 1294168, 1294172)
-)
+  filter(!tag_serial_number %in% c(1171747, 1171751, 1294168, 1294172)) %>%
+  mutate(
+    label = ifelse(
+      cluster == 1,
+      "resident/resting",
+      ifelse(cluster == 2, "migratory", NA)
+    )
+  ) %>%
+  mutate(
+    first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
+    year = year(arrival[1])
+  ) %>%
+  mutate(
+    label = case_when(
+      label == "resident/resting" & row_number() < first_migratory_idx ~
+        "resident",
+      label == "resident/resting" & row_number() > first_migratory_idx ~
+        "resting",
+      label == "migratory" ~ "migratory",
+      is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~ "resident"
+    )
+  ) %>%
+  ungroup() %>%
+  filter(label %in% c("migratory", "resting"))
+
+# Sunlight phases --------------------------------------------------------
 circadian <- getSunlightTimes(
   as.Date(zes00a_1066_Q$Timestamp),
-  lat = 51.1,
-  lon = 5.0,
+  lat = 51.216667, # same location as daylength
+  lon = 4.6,
   keep = c("nightEnd", "sunrise", "sunset", "night")
 )
 
-# For each day the duration of each phase
-circadian$w_dawn <- as.duration(circadian$sunrise - circadian$nightEnd) /
-  (24 * 60 * 60)
-circadian$w_day <- as.duration(circadian$sunset - circadian$sunrise) /
-  (24 * 60 * 60)
-circadian$w_dusk <- as.duration(circadian$night - circadian$sunset) /
-  (24 * 60 * 60)
-circadian$w_night <- 1 - circadian$w_dusk - circadian$w_day - circadian$w_dawn
+# --- CONFIG: choose phases here ---
+#night should be the remainder phase!
+# Option A: 4 phases
+phase_defs <- list(
+  dawn = c("nightEnd", "sunrise"),
+  day = c("sunrise", "sunset"),
+  dusk = c("sunset", "night")
+)
+#3 phases? trwilight_log = TRUE --> dawn + dusk
+twilight_log <- TRUE
 
-# determine for each detection in which circadian phase it falls by making use of circadian_rhythm function
+# Function to compute circadian weights ----------------------------------
+compute_circadian_weights <- function(circadian, phase_defs) {
+  weights <- map(
+    phase_defs,
+    ~ as.duration(circadian[[.[2]]] - circadian[[.[1]]]) / ddays(1)
+  )
+  circadian[paste0("w_", names(phase_defs))] <- weights
+  circadian$w_night <- 1 - rowSums(circadian[paste0("w_", names(phase_defs))])
+  circadian
+}
+
+circadian <- compute_circadian_weights(circadian, phase_defs)
+
+# Derived phase if wanted (twilight = dawn + dusk in 4-phase system)
+if (all(c("w_dawn", "w_dusk") %in% names(circadian))) {
+  circadian$w_twilight <- circadian$w_dawn + circadian$w_dusk
+}
+
+# Annotate detections with circadian phase -------------------------------
 data_eels <- data_eels %>%
   mutate(
-    arrival_circadian = unlist(lapply(
-      data_eels$arrival,
+    arrival_circadian = map_chr(
+      arrival,
       circadian_rhythm,
-      circadian = circadian
-    )),
-    departure_circadian = unlist(lapply(
-      data_eels$departure,
+      circadian = circadian,
+      twilight = twilight_log
+    ),
+    departure_circadian = map_chr(
+      departure,
       circadian_rhythm,
-      circadian = circadian
-    ))
+      circadian = circadian,
+      twilight = twilight_log
+    )
   )
 
+# Calculate probabilities per event & phase ------------------------------
+periods <- gsub("^w_", "", grep("^w_", names(circadian), value = TRUE))
+events <- c("arrival", "departure")
 
-# calculate $dawn_arr = P("dawn"| arrival = date x) (TODO write shorter)
-data_eels$dawn_w_arr <- unlist(lapply(data_eels$arrival, function(x) {
-  circadian$w_dawn[which(circadian$date == floor_date(x, unit = "day"))]
-}))
-data_eels$dawn_w_dep <- unlist(lapply(data_eels$departure, function(x) {
-  circadian$w_dawn[which(circadian$date == floor_date(x, unit = "day"))]
-}))
-data_eels$day_w_dep <- unlist(lapply(data_eels$departure, function(x) {
-  circadian$w_day[which(circadian$date == floor_date(x, unit = "day"))]
-}))
-data_eels$day_w_arr <- unlist(lapply(data_eels$arrival, function(x) {
-  circadian$w_day[which(circadian$date == floor_date(x, unit = "day"))]
-}))
-data_eels$dusk_w_arr <- unlist(lapply(data_eels$arrival, function(x) {
-  circadian$w_dusk[which(circadian$date == floor_date(x, unit = "day"))]
-}))
-data_eels$dusk_w_dep <- unlist(lapply(data_eels$departure, function(x) {
-  circadian$w_dusk[which(circadian$date == floor_date(x, unit = "day"))]
-}))
-data_eels$night_w_arr <- unlist(lapply(data_eels$arrival, function(x) {
-  circadian$w_night[which(circadian$date == floor_date(x, unit = "day"))]
-}))
-data_eels$night_w_dep <- unlist(lapply(data_eels$departure, function(x) {
-  circadian$w_night[which(circadian$date == floor_date(x, unit = "day"))]
-}))
+grid <- expand.grid(period = periods, event = events, stringsAsFactors = FALSE)
+
+walk2(grid$period, grid$event, function(p, e) {
+  col_name <- paste0(p, "_w_", substr(e, 1, 3)) # e.g. "dawn_w_arr"
+  data_eels[[col_name]] <<- map_dbl(data_eels[[e]], function(x) {
+    circadian[[paste0("w_", p)]][circadian$date == floor_date(x, "day")]
+  })
+})
 #write.csv(data_eels, './data/interim/migration_circadian.csv', row.names = FALSE)
 
 # plot the arrivals
@@ -102,6 +135,7 @@ p2 <- ggplot(data_eels, aes(x = hour(departure))) +
   guides(fill = guide_legend(title = "Circadian phase")) +
   facet_wrap(~zone)
 print(p1 / p2)
+#ggsave("./figures/Circadian/circadian_tidal.png")
 # meeste arrivals en departures tussen 18u en 21u
 
 # compare the proportions of arrivals and departures in the different phases
@@ -117,20 +151,38 @@ Proportions_contr <- data_eels %>%
   pivot_longer(-zone, names_to = "phase", values_to = "proportion") %>%
   pivot_wider(names_from = zone, values_from = proportion)
 
+
 Counts <- data_eels %>%
   group_by(zone, arrival_circadian) %>%
   summarise(count = n(), .groups = 'drop') %>%
   mutate(zone = recode(zone, `non-tidal` = "non_tidal")) %>%
   pivot_wider(names_from = zone, values_from = count, values_fill = 0)
+twilight <- c(
+  "twilight",
+  sum(Counts$non_tidal[c(1, 3)]),
+  sum(Counts$tidal[c(1, 3)]),
+  sum(Counts$transition[c(1, 3)])
+)
+
+# Counts <- data_eels %>%
+#   group_by(zone, departure_circadian) %>%
+#   summarise(count = n(), .groups = 'drop') %>%
+#   mutate(zone = recode(zone, `non-tidal` = "non_tidal")) %>%
+#   pivot_wider(names_from = zone, values_from = count, values_fill = 0)
 
 #######################################################################
 # statistical analysis (chi-squared test)
 #######################################################################
 #non-tidal
+#H_0: non-selective migration (based on night/day)
+#assumptions: EXPECTED observations > 5
 chi_nontidal <- chisq.test(
   x = Counts$non_tidal,
-  p = Proportions_contr$non_tidal
+  p = Proportions_contr$non_tidal #relative duration of the phases
 )
+#chi-square test with 3 degrees of freedom (4 phases - 1 = 3)
+#H_0: 100% noctural migration --> voilation of assumptions (expected < 5)
+
 #tidal
 chi_tidal <- chisq.test(
   x = Counts$tidal,
