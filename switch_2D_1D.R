@@ -13,6 +13,68 @@ source("./src/distance_from_source_to_coordinate_function.R")
 #########################################################################################################################
 #get distance from source
 #########################################################################################################################
+#REMARK: distance_to_source verschilt van paling tot paling (afhankelijk van release location)
+#3 palingen werden op een andere plaats losgelaten
+#hiervoor gaan we moeten corrigeren
+#vertrekken vanaf meest stroomopwaartse release location: line vector --> points (point along geometry)
+#extract coordinates of these points (add geometry attributes)
+
+#load csv
+look_up <- read_csv("./data/geo_data/grotenete_zeeschelde_points.csv")
+
+#afstand tot splitsing
+dist_splits_1 <- look_up %>%
+  filter(NAAM == "Grote Nete") %>%
+  select(distance) %>%
+  max() #grote nete --> rupel
+
+dist_af_splits <- 60363 #zeescheldt afwaartst, zeescheldt opwaarts
+
+#name Zeeschelde_af and Zeeschelde_op
+look_up <- look_up %>%
+  mutate(
+    NAAM = case_when(
+      NAAM == "Zeeschelde" & distance > dist_af_splits ~ "Zeeschelde_af",
+      NAAM == "Zeeschelde" & distance <= dist_af_splits ~ "Zeeschelde_op",
+      TRUE ~ NAAM
+    ),
+    distance = case_when(
+      NAAM == "Rupel" ~ distance + dist_splits_1 + 1,
+      TRUE ~ distance
+    )
+  )
+
+#Rupel --> Zeescheldt
+dist_splits_2 <- look_up %>%
+  filter(NAAM == "Rupel") %>%
+  select(distance) %>%
+  max()
+
+
+zee_op <- look_up %>%
+  filter(NAAM == "Zeeschelde_op") %>%
+  mutate(distance_to_source = rev(distance) + dist_splits_2 + 1)
+
+zee_af <- look_up %>%
+  filter(NAAM == "Zeeschelde_af") %>%
+  mutate(distance_to_source = distance + dist_splits_2 - dist_af_splits)
+
+rest <- look_up %>%
+  filter(NAAM != "Zeeschelde_af" & NAAM != "Zeeschelde_op") %>%
+  mutate(distance_to_source = distance)
+
+look_up_corr <- rbind(zee_op, zee_af, rest)
+#save as csv
+write_csv(
+  look_up_corr,
+  "./data/geo_data/grotenete_zeeschelde_points_corrected.csv"
+)
+
+
+
+#######################################################################################################################
+# probeersel met Python, maar gis lijkt het beter te doen
+#########################################################################################################################
 original_projection <- 4326
 coordinate_epsg <- 32631
 #write some point to an sf file (releaselocation:51.144779, 5.003906), random other point: 51.061848, 4.787587 (gn-7)

@@ -68,7 +68,7 @@ phase_defs <- list(
   dusk = c("sunset", "night")
 )
 #3 phases? trwilight_log = TRUE --> dawn + dusk
-twilight_log <- TRUE
+twilight_log <- FALSE
 
 # Function to compute circadian weights ----------------------------------
 compute_circadian_weights <- function(circadian, phase_defs) {
@@ -145,30 +145,33 @@ Proportions_contr <- data_eels %>%
     dawn = mean(dawn_w_arr, na.rm = TRUE),
     day = mean(day_w_arr, na.rm = TRUE),
     dusk = mean(dusk_w_arr, na.rm = TRUE),
-    night = mean(night_w_arr, na.rm = TRUE)
+    night = mean(night_w_arr, na.rm = TRUE),
+    twilight = mean(twilight_w_arr, na.rm = TRUE)
   ) %>%
   mutate(zone = recode(zone, `non-tidal` = "non_tidal")) %>%
   pivot_longer(-zone, names_to = "phase", values_to = "proportion") %>%
   pivot_wider(names_from = zone, values_from = proportion)
 
+if (twilight_log) {
+  Proportions_contr <- Proportions_contr %>%
+    filter(phase != "dawn" & phase != "dusk")
+} else {
+  Proportions_contr <- Proportions_contr %>%
+    filter(phase != "twilight")
+}
 
 Counts <- data_eels %>%
   group_by(zone, arrival_circadian) %>%
   summarise(count = n(), .groups = 'drop') %>%
   mutate(zone = recode(zone, `non-tidal` = "non_tidal")) %>%
   pivot_wider(names_from = zone, values_from = count, values_fill = 0)
-twilight <- c(
-  "twilight",
-  sum(Counts$non_tidal[c(1, 3)]),
-  sum(Counts$tidal[c(1, 3)]),
-  sum(Counts$transition[c(1, 3)])
-)
 
-# Counts <- data_eels %>%
-#   group_by(zone, departure_circadian) %>%
-#   summarise(count = n(), .groups = 'drop') %>%
-#   mutate(zone = recode(zone, `non-tidal` = "non_tidal")) %>%
-#   pivot_wider(names_from = zone, values_from = count, values_fill = 0)
+
+Counts <- data_eels %>%
+  group_by(zone, departure_circadian) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  mutate(zone = recode(zone, `non-tidal` = "non_tidal")) %>%
+  pivot_wider(names_from = zone, values_from = count, values_fill = 0)
 
 #######################################################################
 # statistical analysis (chi-squared test)
