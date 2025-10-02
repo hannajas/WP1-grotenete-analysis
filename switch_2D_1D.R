@@ -20,55 +20,96 @@ source("./src/distance_from_source_to_coordinate_function.R")
 #extract coordinates of these points (add geometry attributes)
 
 #load csv
-look_up <- read_csv("./data/geo_data/grotenete_zeeschelde_points.csv")
+lookup_gis <- read_csv(
+  './data/geo_data/grotenete_zeeschelde_lookup_Lambert_gis.csv',
+  show_col_types = FALSE
+)
 
 #afstand tot splitsing
-dist_splits_1 <- look_up %>%
+dist_splits_1 <- lookup_gis %>%
   filter(NAAM == "Grote Nete") %>%
-  select(distance) %>%
+  dplyr::select(distance) %>%
   max() #grote nete --> rupel
 
 dist_af_splits <- 60363 #zeescheldt afwaartst, zeescheldt opwaarts
 
-#name Zeeschelde_af and Zeeschelde_op
-look_up <- look_up %>%
+#rename each river segment gn, rup, zes_up, zes_down
+lookup_gis <- lookup_gis %>%
   mutate(
     NAAM = case_when(
-      NAAM == "Zeeschelde" & distance > dist_af_splits ~ "Zeeschelde_af",
-      NAAM == "Zeeschelde" & distance <= dist_af_splits ~ "Zeeschelde_op",
+      NAAM == "Zeeschelde" & distance > dist_af_splits ~ "zes_down",
+      NAAM == "Zeeschelde" & distance <= dist_af_splits ~ "zes_up",
+      NAAM == "Rupel" ~ "rup",
+      NAAM == "Grote Nete" ~ "gn",
       TRUE ~ NAAM
     ),
     distance = case_when(
-      NAAM == "Rupel" ~ distance + dist_splits_1 + 1,
+      NAAM == "rup" ~ distance + dist_splits_1 + 1,
       TRUE ~ distance
     )
   )
 
-#Rupel --> Zeescheldt
-dist_splits_2 <- look_up %>%
-  filter(NAAM == "Rupel") %>%
-  select(distance) %>%
-  max()
+#afstand tot splitsing
+dist_splits_2 <- lookup_gis %>%
+  filter(NAAM == "rup") %>%
+  dplyr::select(distance) %>%
+  max()#Rupel --> Zeescheldt
 
 
-zee_op <- look_up %>%
-  filter(NAAM == "Zeeschelde_op") %>%
-  mutate(distance_to_source = rev(distance) + dist_splits_2 + 1)
-
-zee_af <- look_up %>%
-  filter(NAAM == "Zeeschelde_af") %>%
+zee_op <- lookup_gis %>%
+  filter(NAAM == "zes_down") %>%
   mutate(distance_to_source = distance + dist_splits_2 - dist_af_splits)
 
-rest <- look_up %>%
-  filter(NAAM != "Zeeschelde_af" & NAAM != "Zeeschelde_op") %>%
+zee_af <- lookup_gis %>%
+  filter(NAAM == "zes_up") %>%
+  mutate(distance_to_source = rev(distance) + dist_splits_2 + 1)
+
+rest <- lookup_gis %>%
+  filter(NAAM != "zes_up" & NAAM != "zes_down") %>%
   mutate(distance_to_source = distance)
 
 look_up_corr <- rbind(zee_op, zee_af, rest)
+
+##############################################################################################
+# Calculate the distance to source for each receiver
+#load deployments
+deployments <- read_csv(
+  './data/external/receivernetwork_2019_Grotenete.csv',
+  show_col_types = FALSE
+) %>%#filter missing values out of coordinates
+  filter(!is.na(latitude) & !is.na(longitude))
+#to sf
+deployments_sf <- st_as_sf(
+  deployments,
+  coords = c("longitude", "latitude"),
+  crs = 4326
+) %>%
+  st_transform(crs = 31370)
+#look_up_corr to sf
+look_up_corr_sf <- st_as_sf(
+  look_up_corr,
+  coords = c("xcoord", "ycoord"),
+  crs = 31370
+)
+
+#find for each deployment the closest lookup point
+dist_matrix <- st_distance(deployments_sf, look_up_corr_sf)
+min_indices <- apply(dist_matrix, 1, which.min)
+#add distance to source to deployments
+deployments$distance_to_source_m <- look_up_corr$distance_to_source[min_indices]
+#write deployments
+write_csv(deployments, './data/geo_data/deployments_distance_to_source.csv')
+
 #save as csv
 write_csv(
   look_up_corr,
-  "./data/geo_data/grotenete_zeeschelde_points_corrected.csv"
+  "./data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv"
 )
+
+
+
+
+
 
 
 

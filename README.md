@@ -53,13 +53,22 @@ Data collection and explorative analysis I
     + `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
     + `\metadata.R:`: processing metadata
     + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities)
-* `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration_env_filter.csv`)
+* `switch_2D_1D.R:`:
+    + load the point vector made in QGIS (includes study area, resolution 1m) --> lookup table
+    + process so that to each point a distance_to_source is calculated
+    + add in NAAM column the river segment: gn, rp, zes_up, zes_down (lookup table saved as: `./data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv`)
+    + calculate the distance to source for each receiver (saved in `./data/geo_data/deployments_distance_to_source.csv`)
+* `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration_filter.csv`)
+    + recalcutate the smooth eel track (remove timelimit for which a new track was started)
+    + recalculate the distance_to_source (because of higher resolution if the lookup table in comparison to the original distance matrix)
     + calculate the alternative speed by incorporating the residence times at the receivers in the swimtime
         - `\src\calculate_speed_function.R:` function to calculate the speed for a dataframe with data from one eel
-    + recalcutate the smooth eel track (remove timelimit for which a new track was started)
     + 'downstream' column: calculate wheter migration is downstream
-    + 'downstream_migration' column: ME NIET DUIDELIJK
-    + add colums to defide the study area into different zones: tidal, transition and non-tidal (boundaries from Keirsebelik et al 2025)
+    + 'downstream_migration' column: downstream and faster than a certain treshold? ME NIET DUIDELIJK
+    + add colums to divide the study area into different zones: tidal, transition and non-tidal (boundaries from Keirsebelik et al 2025)
+    + interpolate to find the middle between 2 receivers (interpolation_location)
+    + add column to divide in segements: gn, rup, zes_up, zes_down
+    + add coordinates of the interpolation_location (making use of the lookup table)
 * `explorative_data_analysis.R:` summaries of migration speeds
 
 Trajectory smoothing
@@ -82,8 +91,11 @@ Explorative analysis II
     + For each data point: `\src\concat_env_var_function.R:` function to average the environmental data over the swimtimes of the eels between 2 receivers.
     + in `\src\concat_all_env_var_function.R:` de outputs van `concat_env_var_function.R` voor verschillende meetlocaties van de zelfde variabele worden gebundeld.
     + `\src\inverse_distance_function.R:` get one value out of the different datapoints by performing inverse distance weighting for each point in the migration trajectory
-        - When datatype = "Q", there are 3 segments defined. To link environmental data with the receivers each receiver can only get information from data-point that are located whitin the same segment.
-    + Q is normalised over traject
+        -  If 1D along river: Closest upstream en downstream environmental data point is used
+            - When datatype = "Q", there are 3 segments defined. To link environmental data with the receivers each receiver can only get information from data-point that are located whitin the same segment.
+            - Q is normalised over traject
+        - 2D (Rainfall): involve all datapoints
+
 
     INTERPOLATED DATA
 
