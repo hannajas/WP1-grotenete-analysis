@@ -375,13 +375,22 @@ data <- read_csv(
   './data/interim/migration_env_filter.csv',
   show_col_types = FALSE
 )
+sf_points <- st_as_sf(
+  data,
+  coords = c("deploy_longitude", "deploy_latitude"),
+  crs = 4326 # WGS84
+) %>% st_transform(crs = 31370)#Lambert 72 = 31370
 
-cord.dec <- SpatialPoints(
-  data[, c("deploy_longitude", "deploy_latitude")],
-  proj4string = CRS("+proj=longlat")
-)
-test <- spTransform(cord.dec, CRS("+proj=utm +zone=31 +ellps=WGS84"))
-data[, c("x", "y")] <- coordinates(test)
+# Extract coordinates back to data frame columns x and y
+data$x <- NA
+data$y <- NA
+data[, c("x", "y")] <- st_coordinates(sf_points)
+# cord.dec <- SpatialPoints(
+#   data[, c("deploy_longitude", "deploy_latitude")],
+#   proj4string = CRS("+proj=longlat")
+# )
+# test <- spTransform(cord.dec, CRS("+proj=utm +zone=31 +ellps=WGS84"))
+# data[, c("x", "y")] <- coordinates(test)
 resolution_s <- "15 min"
 minutes <- 15
 

@@ -39,6 +39,11 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 
 Data collection and explorative analysis I
 * `/importing_data/waterRinfo.R:` Making use of the wateRinfo package and save the data at `/raw`
+* `switch_2D_1D.R:`:
+    + load the point vector made in QGIS (includes study area, resolution 1m) --> lookup table
+    + process so that to each point a distance_to_source is calculated
+    + add in NAAM column the river segment: gn, rp, zes_up, zes_down (lookup table saved as: `./data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv`)
+    + calculate the distance to source for each receiver (saved in `./data/geo_data/deployments_distance_to_source.csv`)
 * `/cross_sections/get_velocities.R:` Calculate the water velocity for 5 locations (5 locations with Q-data and cross section data)
 
     For each location:
@@ -52,12 +57,8 @@ Data collection and explorative analysis I
     + `\Tides.R:` arrival/departure analysis. ebb/flood at receiver was decided based on closest measuring point
     + `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
     + `\metadata.R:`: processing metadata
+        - e.g calculated distance to source based on lookup table
     + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities)
-* `switch_2D_1D.R:`:
-    + load the point vector made in QGIS (includes study area, resolution 1m) --> lookup table
-    + process so that to each point a distance_to_source is calculated
-    + add in NAAM column the river segment: gn, rp, zes_up, zes_down (lookup table saved as: `./data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv`)
-    + calculate the distance to source for each receiver (saved in `./data/geo_data/deployments_distance_to_source.csv`)
 * `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration_filter.csv`)
     + recalcutate the smooth eel track (remove timelimit for which a new track was started)
     + recalculate the distance_to_source (because of higher resolution if the lookup table in comparison to the original distance matrix)

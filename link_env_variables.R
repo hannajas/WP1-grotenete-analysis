@@ -21,7 +21,10 @@ data$departure <- ymd_hms(data$departure)
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
 #Upload lookup
-lookup <- read_csv('./data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv', show_col_types = FALSE)
+lookup <- read_csv(
+  './data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv',
+  show_col_types = FALSE
+)
 
 ##############################################################################
 # Link environmental data with RAW telemetry data
@@ -70,16 +73,13 @@ data_temp <- lapply(data_list, function(x) {
 })
 data <- plyr::ldply(data_temp, data.frame)
 
-# filter out unrealistic speed values
-data_filter <- filter(data, !startsWith(data$station_name, "ws-")) #+- 62 waarden uitgelaten
-
-write.csv(data_filter, './data/interim/migration_env_filter.csv')
+write.csv(data, './data/interim/migration_env_filter.csv')
 
 ##############################################################################
 # Link environmental data with INTERPOLATED telemetry data
 ##############################################################################
 p <- 1
-source("./src/inverse_distance_function.R")
+source("./src/inverse_distance_function_Q.R")
 source("./src/align_resolutions_function.R")
 #data from smooting has a resolution of 15 min
 data_inter_env <- read_csv(
@@ -132,7 +132,7 @@ photoperiod <- read_csv(
   rename(photoperiod = Value)
 data_inter_env$rounddate <- floor_date(data_inter_env$date, "day")
 data_inter_env <- left_join(
-  data_inter_env,
+  data_inter_env %>% dplyr::select(-photoperiod),
   photoperiod,
   by = c("rounddate" = "date")
 ) %>%
@@ -155,17 +155,18 @@ data_inter_env <- left_join(
 #     p,
 #     "R"
 #   )
-data_inter_env <- data_inter_env %>%
-  group_by(tag_serial_number) %>%
-  mutate(R = cumsum(R)) %>%
-  ungroup()
 
+#cumulate R
+# data_inter_env <- data_inter_env %>%
+#   group_by(tag_serial_number) %>%
+#   mutate(R = cumsum(R)) %>%
+#   ungroup()
 
 data_list <- split(data_inter_env, data_inter_env$tag_serial_number)
 data_temp <- lapply(data_list, function(x) {
   x$delta_Tw <- x$Tw - lag(x$Tw)
   x$delta_Q <- x$Q - lag(x$Q)
-  x$delta_R <- x$R - lag(x$R)
+  #x$delta_R <- x$R - lag(x$R)
   return(x)
 })
 data_inter_env <- plyr::ldply(data_temp, data.frame)

@@ -66,60 +66,11 @@ for (i in 2:length(seq_af) - 1) {
 dev.off()
 
 ####################################################################################
-# test new inverse distance interpolation
+# test R interpolation at for interpolated telemetry data
 ####################################################################################
-data_type <- "Q"
-telemetry_data <- data
-temp <- concat_all_env_vars(data, "Q", metadata)
-env_data <- temp
-metadata_filter <- filter(metadata, metadata$type == data_type)
-p <- 2
-look_up_table <- lookup
-
-
-n <- dim(metadata_filter)[1]
-V <- as.matrix(env_data)
-nan_V <- which(is.nan(V))
-
-# find two closest recievers (upstream and downstream)
-
-W <- lapply(seq_along(telemetry_data$interpolation_location), function(j) {
-  diffs <- metadata_filter$distance_to_source - telemetry_data$interpolation_location[j]
-
-  # upstream (closest negative diff) and downstream (closest positive diff)
-  upstream_idx <- if (any(diffs < 0)) which.max(diffs[diffs < 0]) else NA
-  downstream_idx <- if (any(diffs > 0)) which.min(diffs[diffs > 0]) else NA
-
-  selected_idx <- na.omit(c(
-    if (!is.na(upstream_idx)) which(diffs == max(diffs[diffs < 0]))[1],
-    if (!is.na(downstream_idx)) which(diffs == min(diffs[diffs > 0]))[1], #of NA for upstream_idx or downstream_idx is NA --> choose closest environmental station
-    if (is.na(upstream_idx) | is.na(downstream_idx)) which.min(abs(diffs)) #if no upstream or downstream station, choose closest station
-  ))
-
-  w <- rep(0, length(diffs)) # start with zeros
-  if (length(selected_idx) == 2) {
-    w[selected_idx] <- 1 / abs(diffs[selected_idx])^p
-  } else if (length(selected_idx) == 1) {
-    w[selected_idx] <- 1
-  }
-  return(w)
-})
-
-W <- matrix(unlist(W), ncol = n, byrow = TRUE)
-
-  # dealing with the nan values in temperature values
-  W[nan_V] <- 0
-
-
-ind_row_gn <- which(telemetry_data$river_segment == "gn")
-ind_col_gn <- which(metadata_filter$segment != "gn")
-ind_row_rup <- which(telemetry_data$river_segment == "rup")
-ind_col_rup <- which(metadata_filter$segment != "rup")
-ind_row_zes <- which(
-  telemetry_data$river_segment == "zes_up" |
-    telemetry_data$river_segment == "zes_down"
-)
-ind_col_zes <- which(metadata_filter$segment != "zes")
-W[ind_row_gn, ind_col_gn] <- 0
-W[ind_row_rup, ind_col_rup] <- 0
-W[ind_row_zes, ind_col_zes] <- 0
+data_inter_env <- read_csv(
+  './data/interim/migration_inter.csv',
+  show_col_types = FALSE
+) %>%
+  dplyr::select(-photoperiod)
+variables <- c("Tw", "Q", "V", "O", "turb", "S", "R")

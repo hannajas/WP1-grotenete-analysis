@@ -7,6 +7,7 @@
 library(wateRinfo)
 library(tidyverse)
 library(rvest)
+library(sf)
 
 # Load metadata
 metadata <- read_csv('./data/raw/metadata/Metadata.csv', show_col_types = FALSE)
@@ -33,6 +34,8 @@ for (i in 1:n_data) {
     ))
   }
 }
+
+#add if a station is located at a receiver
 receiver <- lapply(1:n_data, function(i) {
   data$station_name[which(
     round(data$distance_to_source_m, digits = 2) ==
@@ -41,5 +44,29 @@ receiver <- lapply(1:n_data, function(i) {
 })
 metadata$receiver <- unlist(receiver)
 
+
+##############################################################################################
+#Calculate the distance_to_source for each environmental measurement station (not R)
+lookup <- read_csv(
+  './data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv',
+  show_col_types = FALSE
+)
+metadata_filter <- filter(metadata, metadata$type != "R" & metadata$type != "photoperiod")
+#to sf
+metadata_sf <- st_as_sf(
+  metadata_filter,
+  coords = c("xcoord", "ycoord"),
+  crs = 31370
+)
+lookup_sf <- st_as_sf(
+  lookup,
+  coords = c("xcoord", "ycoord"),
+  crs = 31370
+)
+#find for each deployment the closest lookup point
+dist_matrix <- st_distance(metadata_sf, lookup_sf)
+min_indices <- apply(dist_matrix, 1, which.min)
+#add distance to source to deployments
+metadata$distance_to_source[metadata$type != "R" & metadata$type != "photoperiod"] <- lookup$distance_to_source[min_indices]
 
 write.csv(metadata, './data/interim/metadata.csv')

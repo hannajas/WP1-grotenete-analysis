@@ -3,10 +3,13 @@ library(dplyr)
 library(geosphere)
 style <- theme(
   axis.line = element_line(colour = "black"),
-  axis.text.x = element_text(size = 20, colour = "black", angle = 90),
-  axis.title.x = element_text(size = 25),
+  axis.text.x = element_text(size = 25, colour = "black", angle = 90),
+  axis.title.x = element_text(size = 32),
   axis.text.y = element_text(size = 25, colour = "black"),
-  axis.title.y = element_text(size = 25)
+  axis.title.y = element_text(size = 30),
+  strip.text = element_text(size = 25),#title of facet wrap bigger
+  legend.text = element_text(size = 25),
+  legend.title = element_text(size = 30),
 )
 
 ########################################################
@@ -22,25 +25,25 @@ style <- theme(
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
 #inter
-# data_env <- read.csv(
-#   "./data/interim/migration_env_inter.csv",
-#   header = TRUE,
-#   sep = ","
-# ) %>%
-#   mutate(
-#     arrival = as.POSIXct(arrival, tz = "UTC", truncated = 3),
-#     departure = as.POSIXct(departure, tz = "UTC", truncated = 3),
-#     date = as.POSIXct(date, tz = "UTC", truncated = 3)
-#   ) %>%
-#   group_by(tag_serial_number) %>%
-#   filter(date > date[[1]] + days(1))
+data_env <- read.csv(
+  "./data/interim/migration_env_inter.csv",
+  header = TRUE,
+  sep = ","
+) %>%
+  mutate(
+    arrival = as.POSIXct(arrival, tz = "UTC", truncated = 3),
+    departure = as.POSIXct(departure, tz = "UTC", truncated = 3),
+    date = as.POSIXct(date, tz = "UTC", truncated = 3)
+  ) %>%
+  group_by(tag_serial_number) %>%
+  filter(date > date[[1]] + days(1))
 
 #raw
-data_env <- read_csv(
-  './data/interim/migration_env_filter.csv',
-  show_col_types = FALSE
-) %>%
-  group_by(tag_serial_number) #%>%
+# data_env <- read_csv(
+#   './data/interim/migration_env_filter.csv',
+#   show_col_types = FALSE
+# ) %>%
+#   group_by(tag_serial_number) #%>%
 
 ##filter(arrival > arrival[[1]] + days(1)) #DIT WERKT NIET! zo valt het eerste
 #datapunt volledig weg (dit is veel meer dan 1 dag dat je wegsmeet!!)
@@ -129,29 +132,39 @@ data_env_long <- data_env %>%
       levels = c("speed_m_s", "photoperiod", "Tw", "Q", "V")
     )
   )
-
+y_labels <- c(
+  speed_m_s = "Eel speed (m/s)",
+  photoperiod = "Photoperiod (min)",
+  Tw = "Temperature (°C)",
+  Q = "Discharge (m³/s)",
+  V = "Velocity (m/s)"
+)
 p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose the colors
   #scale_fill_manual(values = c("all" = "blue", "first_resident" = "red"), alpha = 0.5) +
   geom_boxplot(position = "dodge") +
-  facet_wrap(~variable, nrow = 1, scales = "free") +
+  facet_wrap(~variable, nrow = 1, scales = "free", labeller = as_labeller(y_labels)) +
   style +
-  theme(legend.position = "none")
+  theme(
+  axis.title.y = element_blank(),
+  axis.title.x = element_blank(),
+  axis.text.x = element_blank()) +
 windows(width = 16, height = 5)
 plot(p)
-ggsave(
-  "./figures/Clustering/boxplot_labelled_non_tidal.png",
-  height = 10,
-  width = 20
-)
+# ggsave(
+#   "./figures/Clustering/boxplot_labelled_non_tidal.png",
+#   height = 7,
+#   width = 20
+# )
 
 ######################################################
 # Short-term trigger
 ######################################################
-variable <- "Tw" #Tw?R?
+
+variable <- "Q" #Tw?R?
 
 # source functions
 source("./src/align_resolutions_function.R")
-source("./src/inverse_distance_function.R")
+source("./src/inverse_distance_function_Q.R")
 
 list <- split(data_env, data_env$tag_serial_number) # lijst van alle eels
 # identificeer het eerste knikpunt (tijdstip t_k) op plaats x_k ("migratory for the first time")
@@ -214,9 +227,9 @@ for (i in 1:length(list)) {
   ])
   deltaQ_rest <- deltaQ_inter_k[data_eel$date < t_k - as.duration(range)]
 
-  #create data frame
+  #create data frame: DELETE OR ADD DELTA DEPENDING ON PREFERENCE
   data_plot <- data.frame(
-    Q = c(deltaQ_rest, deltaQ_trigger), #delete or add delta depending on your interest
+    Q = c(Q_rest, Q_trigger),
     tag_serial_number = data_eel$tag_serial_number[1],
     type = c(
       rep("Q_rest", length(Q_rest)),
@@ -243,7 +256,7 @@ g <- ggplot(data = dataplot) +
   facet_wrap(~tag_serial_number) +
   style + #other text on y axis, no x values in x  axis
   theme(axis.text.x = element_blank()) +
-  labs(y = "Rainfall (mm)")
+  labs(y = "Discharge (m³/s)", x = "Eel ID")
 plot(g)
 # ggsave(
 #   "./figures/as_trigger/deltaTw_rangemmax_1day_delday1.png",
