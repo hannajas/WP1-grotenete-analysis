@@ -26,7 +26,17 @@ inverse_distance <- function(
     W <- lapply(seq_along(telemetry_data$interpolation_location), function(j) {
       diffs <- metadata_filter$distance_to_source -
         telemetry_data$interpolation_location[j]
-
+      diffs_refect <- -(abs(metadata_filter$distance_to_source - dist_split) +
+        abs(dist_split - telemetry_data$interpolation_location[j]))
+      if (telemetry_data$inter_segment[j] == "zes_up") {
+        diffs[metadata_filter$segment == "zes_down"] <- diffs_refect[
+          metadata_filter$segment == "zes_down"
+        ]
+      } else if (telemetry_data$inter_segment[j] == "zes_down") {
+        diffs[metadata_filter$segment == "zes_up"] <- diffs_refect[
+          metadata_filter$segment == "zes_up"
+        ]
+      }
       # upstream (closest negative diff) and downstream (closest positive diff)
       upstream_idx <- if (any(diffs < 0)) which.max(diffs[diffs < 0]) else NA
       downstream_idx <- if (any(diffs > 0)) which.min(diffs[diffs > 0]) else NA
@@ -54,13 +64,13 @@ inverse_distance <- function(
 
   if (data_type == "Q" | data_type == "V") {
     #enkel gewicht als binnen zelfde rivier segment
-    ind_row_gn <- which(telemetry_data$river_segment == "gn")
+    ind_row_gn <- which(telemetry_data$inter_segment == "gn")
     ind_col_gn <- which(metadata_filter$segment != "gn")
-    ind_row_rup <- which(telemetry_data$river_segment == "rup")
+    ind_row_rup <- which(telemetry_data$inter_segment == "rup")
     ind_col_rup <- which(metadata_filter$segment != "rup")
     ind_row_zes <- which(
-      telemetry_data$river_segment == "zes_up" |
-        telemetry_data$river_segment == "zes_down"
+      telemetry_data$inter_segment == "zes_up" |
+        telemetry_data$inter_segment == "zes_down"
     )
     ind_col_zes <- which(metadata_filter$segment != "zes")
     W[ind_row_gn, ind_col_gn] <- 0

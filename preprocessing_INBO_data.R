@@ -55,11 +55,10 @@ deployments <- read_csv(
 ) #probleem --> release locatie niet hierin
 data <- left_join(
   data %>% dplyr::select(-distance_to_source_m),
-  deployments %>% dplyr::select(station_name, distance_to_source_m),
+  deployments %>% dplyr::select(station_name, distance_to_source_m, distance),
   by = "station_name"
 )
-
-#recalculate the toal distance
+#recalculate the total distance
 data <- data %>%
   group_by(tag_serial_number) %>%
   arrange(arrival, .by_group = TRUE) %>%
@@ -148,66 +147,21 @@ data <- data %>%
     )
   ) %>%
   ungroup()
-data$interpolation_location[is.na(data$interpolation_location)] <- round(data$distance_to_source_m[is.na(data$interpolation_location)])
+data$interpolation_location[is.na(
+  data$interpolation_location
+)] <- round(data$distance_to_source_m[is.na(data$interpolation_location)])
 
 #######################################################################################################################
 # add column to divide in segments: gn, rup, zes_up, zes_down
 # summate all the receivers in the Zeeschelde downstream the confluence of the Rupel
-zes_down <- c(
-  "s-8",
-  "s-8a",
-  "s-9",
-  "s-9a",
-  "s-10",
-  "s-10a",
-  "ak-41",
-  "s-11",
-  "s-12",
-  "s-STD3"
-)
-# add all station names starting with ws
-ws_stations <- grep("^ws-", unique(data$station_name), value = TRUE)
-zes_down <- c(zes_down, ws_stations)
 
 #upload lookup table
 look_up <- read_csv(
   './data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv',
   show_col_types = FALSE
 )
-boundaries <- look_up %>%
-  group_by(NAAM) %>%
-  summarise(max_distance = max(distance)) %>%
-  ungroup()
-data$river_segment <- "rup"
-data$inter_segment <- "rup"
-data$river_segment[
-  data$distance_to_source_m < boundaries$max_distance[1]
-] <- "gn"
-data$inter_segment[
-  data$interpolation_location < boundaries$max_distance[1]
-] <- "gn"
-data$river_segment[
-  data$distance_to_source_m > boundaries$max_distance[2]
-] <- "zes"
-data$inter_segment[
-  data$interpolation_location > boundaries$max_distance[2]
-] <- "zes"
-
-data <- data %>%
-  mutate(
-    river_segment = case_when(
-      station_name %in% zes_down ~ "zes_down",
-      river_segment == "zes" ~ "zes_up",
-      TRUE ~ river_segment
-    ),
-    inter_segment = case_when(
-      #klopt niet, je zit niet bij het station!
-      inter_segment == "zes" & station_name %in% zes_down ~ "zes_down",
-      inter_segment == "zes" ~ "zes_up",
-      TRUE ~ inter_segment
-    )
-  )
-
+data$inter_segment <- add_segment(look_up, data, "interpolation_location")
+data$river_segment <- add_segment(look_up, data, "distance_to_source_m")
 
 #######################################################################################################################
 # add coordinates to interpolation location
@@ -231,7 +185,11 @@ data_filter <- filter(data, !startsWith(data$station_name, "ws-")) #+- 62 waarde
 
 #add inter_longitude and inter_latitude
 #make sf of data
-data_sf <- st_as_sf(data_filter, coords = c("xcoord_inter", "ycoord_inter"), crs = 31370) %>%
+data_sf <- st_as_sf(
+  data_filter,
+  coords = c("xcoord_inter", "ycoord_inter"),
+  crs = 31370
+) %>%
   st_transform(crs = 4326)
 st_coordinates(data_sf)
 data_coords <- cbind(data_filter, st_coordinates(data_sf))

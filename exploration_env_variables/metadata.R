@@ -51,7 +51,10 @@ lookup <- read_csv(
   './data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv',
   show_col_types = FALSE
 )
-metadata_filter <- filter(metadata, metadata$type != "R" & metadata$type != "photoperiod")
+metadata_filter <- filter(
+  metadata,
+  metadata$type != "R" & metadata$type != "photoperiod"
+)
 #to sf
 metadata_sf <- st_as_sf(
   metadata_filter,
@@ -67,6 +70,17 @@ lookup_sf <- st_as_sf(
 dist_matrix <- st_distance(metadata_sf, lookup_sf)
 min_indices <- apply(dist_matrix, 1, which.min)
 #add distance to source to deployments
-metadata$distance_to_source[metadata$type != "R" & metadata$type != "photoperiod"] <- lookup$distance_to_source[min_indices]
+metadata$distance_to_source[
+  metadata$type != "R" & metadata$type != "photoperiod"
+] <- lookup$distance_to_source[min_indices]
+metadata$distance <- NA
+metadata$distance[
+  metadata$type != "R" & metadata$type != "photoperiod"
+] <- lookup$distance[min_indices]
+
+
+##############################################################################################
+#Add segments
+metadata$segment <- add_segments(lookup, metadata, "distance_to_source")
 
 write.csv(metadata, './data/interim/metadata.csv')

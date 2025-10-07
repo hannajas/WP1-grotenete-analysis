@@ -26,6 +26,11 @@ lookup <- read_csv(
   show_col_types = FALSE
 )
 
+# distance to splitsing (rupel --> schelde)
+dist_split <- lookup %>%
+  filter(NAAM == "rup") %>%
+  dplyr::select(distance) %>%
+  max() #Rupel --> Zeescheldt
 ##############################################################################
 # Link environmental data with RAW telemetry data
 ##############################################################################
@@ -73,20 +78,25 @@ data_temp <- lapply(data_list, function(x) {
 })
 data <- plyr::ldply(data_temp, data.frame)
 
+#set NA all S values where zone non-tidal
+data$S[data$zone == "non-tidal"] <- NA
+data$turb[data$zone == "non-tidal"] <- NA
+data$O[data$zone == "non-tidal"] <- NA
+
 write.csv(data, './data/interim/migration_env_filter.csv')
 
 ##############################################################################
 # Link environmental data with INTERPOLATED telemetry data
 ##############################################################################
 p <- 1
-source("./src/inverse_distance_function_Q.R")
+source("./src/inverse_distance_function.R")
 source("./src/align_resolutions_function.R")
 #data from smooting has a resolution of 15 min
 data_inter_env <- read_csv(
   './data/interim/migration_inter.csv',
   show_col_types = FALSE
 ) %>%
-  select(-photoperiod)
+  dplyr::select(-photoperiod)
 variables <- c("Tw", "Q", "V", "O", "turb", "S", "R")
 for (var in variables) {
   #runt lang!
@@ -132,7 +142,7 @@ photoperiod <- read_csv(
   rename(photoperiod = Value)
 data_inter_env$rounddate <- floor_date(data_inter_env$date, "day")
 data_inter_env <- left_join(
-  data_inter_env %>% dplyr::select(-photoperiod),
+  data_inter_env,
   photoperiod,
   by = c("rounddate" = "date")
 ) %>%
@@ -141,7 +151,7 @@ data_inter_env <- left_join(
 #set R right
 # left_join(data_inter_env, env_data_R, by = "date")
 # temp <- align_resolutions_function(#R --> all data on 15 min
-#   "R",
+#   "S",
 #   as.difftime(15, units = "mins"), #as.period(5, "mins"),
 #   metadata,
 #   upsample_method = "ffill",
@@ -170,5 +180,11 @@ data_temp <- lapply(data_list, function(x) {
   return(x)
 })
 data_inter_env <- plyr::ldply(data_temp, data.frame)
+
+# set NA all S values where zone non-tidal
+data_inter_env$S[data_inter_env$zone == "non-tidal"] <- NA
+data_inter_env$turb[data_inter_env$zone == "non-tidal"] <- NA
+data_inter_env$O[data_inter_env$zone == "non-tidal"] <- NA
+
 
 write_csv(data_inter_env, "./data/interim/migration_env_inter.csv")

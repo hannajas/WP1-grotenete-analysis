@@ -73,4 +73,45 @@ data_inter_env <- read_csv(
   show_col_types = FALSE
 ) %>%
   dplyr::select(-photoperiod)
-variables <- c("Tw", "Q", "V", "O", "turb", "S", "R")
+var <- "R"
+
+temp <- align_resolutions_function(
+  #R --> all data on 15 min
+  var,
+  as.difftime(15, units = "mins"), #as.period(5, "mins"),
+  metadata,
+  upsample_method = "ffill",
+  data_inter_env
+)
+p <- 1
+# int_test <-
+#   inverse_distance(
+#     data_inter_env,
+#     temp,
+#     metadata,
+#     p,
+#     var
+#   )
+env_data <- temp
+metadata_filter <- filter(metadata, metadata$type == var)
+
+
+n <- dim(metadata_filter)[1]
+V <- as.matrix(env_data)
+nan_V <- which(is.nan(V))
+telemetry_data <- data_inter_env
+W <- lapply(1:n, function(i) {
+  distance <- distm(
+    telemetry_data[c("inter_longitude", "inter_latitude")],
+    metadata_filter[c("station_longitude", "station_latitude")][i, ],
+    fun = distHaversine
+  )
+  ifelse((distance == 0), NaN, abs(1 / (distance)^p))
+})
+
+distance <- distm(
+  telemetry_data[c("inter_longitude", "inter_latitude")],
+  metadata_filter[c("station_longitude", "station_latitude")][1, ],
+  fun = distHaversine
+)
+View(distance)

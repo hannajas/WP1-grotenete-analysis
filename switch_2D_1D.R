@@ -97,6 +97,7 @@ dist_matrix <- st_distance(deployments_sf, look_up_corr_sf)
 min_indices <- apply(dist_matrix, 1, which.min)
 #add distance to source to deployments
 deployments$distance_to_source_m <- look_up_corr$distance_to_source[min_indices]
+deployments$distance <- look_up_corr$distance[min_indices]
 #write deployments
 write_csv(deployments, './data/geo_data/deployments_distance_to_source.csv')
 

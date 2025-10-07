@@ -38,7 +38,7 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 ### Scripts
 
 Data collection and explorative analysis I
-* `/importing_data/waterRinfo.R:` Making use of the wateRinfo package and save the data at `/raw`
+* `/importing_data/waterRinfo.R:` Making use of the wateRinfo package and save the data at `/raw` (timezone = UCT)
 * `switch_2D_1D.R:`:
     + load the point vector made in QGIS (includes study area, resolution 1m) --> lookup table
     + process so that to each point a distance_to_source is calculated
@@ -60,6 +60,7 @@ Data collection and explorative analysis I
         - e.g calculated distance to source based on lookup table
     + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities)
 * `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration_filter.csv`)
+    + timestamps in raw data are in timezone UTC
     + recalcutate the smooth eel track (remove timelimit for which a new track was started)
     + recalculate the distance_to_source (because of higher resolution if the lookup table in comparison to the original distance matrix)
     + calculate the alternative speed by incorporating the residence times at the receivers in the swimtime

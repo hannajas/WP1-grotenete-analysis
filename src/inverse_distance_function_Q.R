@@ -8,8 +8,8 @@ inverse_distance <- function(telemetry_data, env_data, metadata, p, data_type) {
   if (data_type == "R") {
     W <- lapply(1:n, function(i) {
       distance <- distm(
-        telemetry_data[c("deploy_longitude", "deploy_latitude")],
-        metadata[c("station_longitude", "station_latitude")][i, ],
+        telemetry_data[c("inter_longitude", "inter_latitude")],
+        metadata_filter[c("station_longitude", "station_latitude")][i, ],
         fun = distHaversine
       )
       ifelse((distance == 0), NaN, abs(1 / (distance)^p))
@@ -17,13 +17,13 @@ inverse_distance <- function(telemetry_data, env_data, metadata, p, data_type) {
   } else {
     W <- lapply(1:n, function(i) {
       ifelse(
-        (telemetry_data$distance_to_source_m -
+        (telemetry_data$interpolation_location -
           metadata_filter$distance_to_source[i]) ==
           0,
         NaN,
         abs(
           1 /
-            (telemetry_data$distance_to_source_m -
+            (telemetry_data$interpolation_location -
               metadata_filter$distance_to_source[i])^p
         )
       )
@@ -59,7 +59,7 @@ inverse_distance <- function(telemetry_data, env_data, metadata, p, data_type) {
   show_W <<- W
   telemetry_data$temp <- rowSums(V * W, na.rm = TRUE) / rowSums(W, na.rm = TRUE)
 
-    for (i in 1:n) {
+  for (i in 1:n) {
     #voor waarde bij release_location (hier ligt ook een Tw en Q meting)
     if (!is.na(metadata_filter$receiver[i])) {
       find_receivers <- telemetry_data$station_name ==

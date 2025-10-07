@@ -379,7 +379,8 @@ sf_points <- st_as_sf(
   data,
   coords = c("deploy_longitude", "deploy_latitude"),
   crs = 4326 # WGS84
-) %>% st_transform(crs = 31370)#Lambert 72 = 31370
+) %>%
+  st_transform(crs = 31370) #Lambert 72 = 31370
 
 # Extract coordinates back to data frame columns x and y
 data$x <- NA
@@ -477,5 +478,86 @@ data_inter <- data_inter %>%
   ) %>%
   ungroup()
 
+#######################################################################################################################
+# Add interpolation of the distance between two receivers (midpoint)
+look_up <- read_csv(
+  './data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv',
+  show_col_types = FALSE
+)
+
+#add interpolation_location (distance_to_source)
+data_inter <- data_inter %>%
+  filter(is.na(dist)) %>%
+  group_by(tag_serial_number) %>%
+  mutate(
+    interpolation_location = round(
+      (distance_to_source_m + lag(distance_to_source_m, 1)) / 2
+    )
+  ) %>%
+  ungroup()
+
+data_inter$interpolation_location[is.na(data_inter$interpolation_location)] <- round(data_inter$distance_to_source_m[is.na(data_inter$interpolation_location)])
+
+# add the segment linked with this location
+zes_down <- c(
+  "s-8",
+  "s-8a",
+  "s-9",
+  "s-9a",
+  "s-10",
+  "s-10a",
+  "ak-41",
+  "s-11",
+  "s-12",
+  "s-STD3"
+)
+boundaries <- look_up %>%
+  group_by(NAAM) %>%
+  summarise(max_distance = max(distance)) %>%
+  ungroup()
+data_inter$inter_segment <- "rup"
+data_inter$inter_segment[
+  data_inter$interpolation_location < boundaries$max_distance[1]
+] <- "gn"
+data_inter$inter_segment[
+  data_inter$interpolation_location > boundaries$max_distance[2]
+] <- "zes"
+
+data <- data %>%
+  mutate(
+    river_segment = case_when(
+      station_name %in% zes_down ~ "zes_down",
+      river_segment == "zes" ~ "zes_up",
+      TRUE ~ river_segment
+    ),
+    inter_segment = case_when(
+      #klopt niet, je zit niet bij het station!
+      inter_segment == "zes" & station_name %in% zes_down ~ "zes_down",
+      inter_segment == "zes" ~ "zes_up",
+      TRUE ~ inter_segment
+    )
+  )
+
+# add coordinates of interpolation location
+data_inter <- data_inter %>%
+  dplyr::select(-c(xcoord_inter,ycoord_inter)) %>%
+  left_join(
+    look_up %>%
+      dplyr::select(distance_to_source, NAAM, xcoord, ycoord),
+    by = c(
+      "interpolation_location" = "distance_to_source",
+      "inter_segment" = "NAAM"
+    )
+  ) %>%
+  rename(xcoord_inter = xcoord, ycoord_inter = ycoord) %>%
+  filter(!is.na(xcoord_inter) & !is.na(ycoord_inter))
+
+data_sf <- st_as_sf(data_inter, coords = c("xcoord_inter", "ycoord_inter"), crs = 31370) %>%
+  st_transform(crs = 4326)
+st_coordinates(data_sf)
+data_coords <- cbind(data_inter, st_coordinates(data_sf))
+data_inter <- data_coords %>%
+  dplyr::select(-inter_latitude, -inter_longitude) %>%
+  rename(inter_longitude = X, inter_latitude = Y)
 #save as csv
 write_csv(data_inter, "./data/interim/migration_inter.csv")
