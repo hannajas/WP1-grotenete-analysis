@@ -74,9 +74,9 @@ Data collection and explorative analysis I
 * `explorative_data_analysis.R:` summaries of migration speeds
 
 Trajectory smoothing
-* `Smoothing.R:` (load `/interim/migration_env_filter.csv`)
-    + regularisation of trajectories(crawl package) (GIVES ERRORS FOR NOW)
+* `Smoothing_interpolation.R:` (load `/interim/migration_env_filter.csv`)
     + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv` (now: resolution = 15 min)
+* `Smoothing.R:` experimenting with crawl and dbscan
 
 Clustering (resting + resident) Vs migratory
 * `Clustering.R:` kmeans (different options were tested BUT log raw data, seperate eels and k=2 works best!)
