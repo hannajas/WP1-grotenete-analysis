@@ -25,25 +25,25 @@ style <- theme(
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
 #inter
-# data_env <- read.csv(
-#   "./data/interim/migration_env_inter.csv",
-#   header = TRUE,
-#   sep = ","
-# ) %>%
-#   mutate(
-#     arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
-#     departure = ymd_hms(departure, tz = "UTC", truncated = 3),
-#     date = ymd_hms(date, tz = "UTC", truncated = 3)
-#   ) %>%
-#   group_by(tag_serial_number) %>%
-#   filter(date > date[[1]] + days(1))
+data_env <- read.csv(
+  "./data/interim/migration_env_inter.csv",
+  header = TRUE,
+  sep = ","
+) %>%
+  mutate(
+    arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
+    departure = ymd_hms(departure, tz = "UTC", truncated = 3),
+    date = ymd_hms(date, tz = "UTC", truncated = 3)
+  ) %>%
+  group_by(tag_serial_number) %>%
+  filter(date > date[[1]] + days(1))
 
 #raw
-data_env <- read_csv(
-  './data/interim/migration_env_filter.csv',
-  show_col_types = FALSE
-) %>%
-  group_by(tag_serial_number) #%>%
+# data_env <- read_csv(
+#   './data/interim/migration_env_filter.csv',
+#   show_col_types = FALSE
+# ) %>%
+#   group_by(tag_serial_number) #%>%
 
 ##filter(arrival > arrival[[1]] + days(1)) #DIT WERKT NIET! zo valt het eerste
 #datapunt volledig weg (dit is veel meer dan 1 dag dat je wegsmeet!!)
@@ -165,60 +165,24 @@ plot(p)
 ######################################################
 # Short-term trigger
 ######################################################
-
+#making use of conditions in interpolated telemetry dataset (its about the Q the eel experieces)
 variable <- "Q" #Tw?R?
-
-# source functions
-source("./src/align_resolutions_function.R")
-source("./src/inverse_distance_function_Q.R")
+delta_variable <- "delta_Q" #delta_Tw? delta_R?
 
 list <- split(data_env, data_env$tag_serial_number) # lijst van alle eels
 # identificeer het eerste knikpunt (tijdstip t_k) op plaats x_k ("migratory for the first time")
 #empty dataframe
 datatemp <- data.frame()
-env_data_Q <- align_resolutions_function(
-  variable,
-  as.difftime(5, units = "mins"), #as.period(5, "mins"),
-  metadata,
-  upsample_method = "ffill",
-  data_env
-)
+
 for (i in 1:length(list)) {
   data_eel <- list[[i]] # neem de eerste eel
-  # #error message if to little detection points
-  # data_eel$date <- as.POSIXct(data_eel$date, tz = "UTC") # zorg dat de datum in het juiste formaat is
-  # index <- which(data_eel$cluster == 2)[1] # index van het eerste knikpunt
-  # if (nrow(data_eel) < 2) {
-  #   next
-  #   #stop("Not enough detection points for this eel.")
-  # } else if (index == 1 | is.na(index)) {
-  #   next
-  #   #stop("Eel started as migratory.")
-  # }
+  # identificeer het eerste knikpunt (tijdstip t_k)
   t_k <- data_eel$date[data_eel$first_migratory_idx[1]]
-  x_k <- data_eel$distance_to_source_m[data_eel$first_migratory_idx[1]]
-
   # identificeer een range [t_k - r; t_k]
   range <- as.period(1, "days")
   # Interpoleer de Q's naar punt x_k (Q_{inter,k})
-  #data_eel$distance_to_source_m <- x_k #DUS dit is super schaalbar naar v!!
-
-  env_data_Q_temp <- env_data_Q[
-    data_env$tag_serial_number == data_eel$tag_serial_number[1],
-  ]
-  Q_inter_k <- inverse_distance(
-    data_eel,
-    env_data_Q_temp,
-    metadata,
-    1,
-    variable
-  )
-  deltaQ_inter_k <- Q_inter_k - lag(Q_inter_k)
-
-  #proberen met V ipv Q
-  # Q_inter_k <- read_csv(
-  #   "./data/interim/processed/gnt07a_1066_V.csv"
-  # )
+  Q_inter_k <- data_eel[[variable]]
+  deltaQ_inter_k <- data_eel[[delta_variable]]
 
   #Bereken vergelijk de Q_max binnen de range met de Q_max binnen [t_release; t_k - r]
   Q_trigger <- max(Q_inter_k[
@@ -251,6 +215,7 @@ trigger_vals <- datatemp[
   datatemp$type == "trigger",
   c("tag_serial_number", "Q")
 ]
+
 #boxplot Qrest and plot Q_trigger with ggplot2
 g <- ggplot(data = dataplot) +
   geom_boxplot(aes(y = Q)) +
