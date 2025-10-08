@@ -3,12 +3,12 @@ library(dplyr)
 library(geosphere)
 style <- theme(
   axis.line = element_line(colour = "black"),
-  axis.text.x = element_text(size = 25, colour = "black", angle = 90),
-  axis.title.x = element_text(size = 32),
-  axis.text.y = element_text(size = 25, colour = "black"),
+  axis.text.x = element_text(size = 30, colour = "black", angle = 90),
+  axis.title.x = element_text(size = 30),
+  axis.text.y = element_text(size = 30, colour = "black"),
   axis.title.y = element_text(size = 30),
-  strip.text = element_text(size = 25),#title of facet wrap bigger
-  legend.text = element_text(size = 25),
+  strip.text = element_text(size = 22), #title of facet wrap bigger
+  legend.text = element_text(size = 27),
   legend.title = element_text(size = 30),
 )
 
@@ -25,25 +25,25 @@ style <- theme(
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
 #inter
-data_env <- read.csv(
-  "./data/interim/migration_env_inter.csv",
-  header = TRUE,
-  sep = ","
-) %>%
-  mutate(
-    arrival = as.POSIXct(arrival, tz = "UTC", truncated = 3),
-    departure = as.POSIXct(departure, tz = "UTC", truncated = 3),
-    date = as.POSIXct(date, tz = "UTC", truncated = 3)
-  ) %>%
-  group_by(tag_serial_number) %>%
-  filter(date > date[[1]] + days(1))
+# data_env <- read.csv(
+#   "./data/interim/migration_env_inter.csv",
+#   header = TRUE,
+#   sep = ","
+# ) %>%
+#   mutate(
+#     arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
+#     departure = ymd_hms(departure, tz = "UTC", truncated = 3),
+#     date = ymd_hms(date, tz = "UTC", truncated = 3)
+#   ) %>%
+#   group_by(tag_serial_number) %>%
+#   filter(date > date[[1]] + days(1))
 
 #raw
-# data_env <- read_csv(
-#   './data/interim/migration_env_filter.csv',
-#   show_col_types = FALSE
-# ) %>%
-#   group_by(tag_serial_number) #%>%
+data_env <- read_csv(
+  './data/interim/migration_env_filter.csv',
+  show_col_types = FALSE
+) %>%
+  group_by(tag_serial_number) #%>%
 
 ##filter(arrival > arrival[[1]] + days(1)) #DIT WERKT NIET! zo valt het eerste
 #datapunt volledig weg (dit is veel meer dan 1 dag dat je wegsmeet!!)
@@ -142,16 +142,22 @@ y_labels <- c(
 p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose the colors
   #scale_fill_manual(values = c("all" = "blue", "first_resident" = "red"), alpha = 0.5) +
   geom_boxplot(position = "dodge") +
-  facet_wrap(~variable, nrow = 1, scales = "free", labeller = as_labeller(y_labels)) +
+  facet_wrap(
+    ~variable,
+    nrow = 1,
+    scales = "free",
+    labeller = as_labeller(y_labels)
+  ) +
   style +
   theme(
-  axis.title.y = element_blank(),
-  axis.title.x = element_blank(),
-  axis.text.x = element_blank()) +
-windows(width = 16, height = 5)
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank()
+  ) +
+  windows(width = 16, height = 5)
 plot(p)
 # ggsave(
-#   "./figures/Clustering/boxplot_labelled_non_tidal.png",
+#   "./figures/Clustering/boxplot_labelled_non_tidal_inter.png",
 #   height = 7,
 #   width = 20
 # )
@@ -259,7 +265,7 @@ g <- ggplot(data = dataplot) +
   labs(y = "Discharge (m³/s)", x = "Eel ID")
 plot(g)
 # ggsave(
-#   "./figures/as_trigger/deltaTw_rangemmax_1day_delday1.png",
+#   "./figures/onset_of_migration/as_trigger/Q_rangemmax_1day_delday1.png",
 #   plot = g,
 # )
 
@@ -275,7 +281,7 @@ plot(g)
 #   theme_minimal()
 
 ######################################################
-# Time of onset
+# Time of onset (MET ruwe data)
 ######################################################
 data_onset <- data %>%
   group_by(tag_serial_number) %>%
@@ -289,7 +295,7 @@ p <- ggplot(data_onset, aes(x = hour(departure))) +
   guides(fill = guide_legend(title = "Circadian phase"))
 
 p <- ggplot(data_onset, aes(x = hour(departure))) +
-  geom_bar(aes(fill = arrival_circadian)) +
+  geom_bar(aes(fill = arrival_circadian), color = "black") +
   coord_radial(r.axis.inside = TRUE, expand = FALSE) + # rotate so 0 is at north (start = -pi/120, direction = 1)
   scale_x_continuous(
     breaks = seq(0, 21, by = 3), # 0,3,6,9,12,15,18,21
@@ -298,7 +304,7 @@ p <- ggplot(data_onset, aes(x = hour(departure))) +
   style +
   theme(axis.line = element_blank()) +
   labs(
-    title = "Onset of migration",
+    #title = "Onset of migration",
     x = "Hour of departure",
     y = element_blank()
   ) + #change position of label y axis
@@ -307,15 +313,18 @@ p <- ggplot(data_onset, aes(x = hour(departure))) +
     "text",
     x = 24, # place at "north" outer edge
     y = max(table(hour(data_onset$departure))) * 0.5, # halfway up radial axis
-    label = "Number of eels",
+    label = "# eels",
     angle = 90, # vertical orientation
-    hjust = 0.5,
-    vjust = -1.5,
-    size = 7
+    hjust = 0.4,
+    vjust = 1.4,
+    size = 11
   )
+plot(p)
 #save plot
 ggsave(
-  "./figures/onset_of_migration/onset_migration.png"
+  "./figures/onset_of_migration/onset_migration.png",
+  width = 10,
+  height = 10
 )
 
 
