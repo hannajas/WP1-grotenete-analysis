@@ -8,7 +8,7 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 ## Project structure
 
 ### Data
-<mark>Data last updated on 22-05-2025</mark>
+<mark>Data last updated on 14-10-2025</mark>
 
 * `/raw:`
 	+ `migration.csv`: dataset containing eel tracks and speed
@@ -53,7 +53,7 @@ Data collection and explorative analysis I
     + `\discharge.R:` preprocessing of discharge
     + `\rainfall.R:` preprocessing of rainfall. Later in the analysis the accumulated rainfall will be used (release time as startingpoint)
     + `\Watertemperature.R`: preprocessing of watertemperature (+ looking at correlations between measurements)
-    + `\Circadian.R:` arrival/departure analysis
+    + `\Circadian.R:` arrival/departure analysis + chi-squared test
     + `\Tides.R:` arrival/departure analysis. ebb/flood at receiver was decided based on closest measuring point
     + `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
     + `\metadata.R:`: processing metadata
@@ -84,6 +84,7 @@ Clustering (resting + resident) Vs migratory
     + silhouette width method + biological knowledge --> $k = 2$
     + looking at seperate eels (less false resident in straightforward migration part)
     + first value is NA (for each eel)
+    + 1 = resident, 2 = migration
 
 Explorative analysis II
 * `link_env_variables.R:` linking the environmental variables with the telemetry data (R becomes the accumulated data)

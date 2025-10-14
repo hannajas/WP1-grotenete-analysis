@@ -1,6 +1,8 @@
 library(tidyverse)
 library(dplyr)
 library(geosphere)
+library(ggplot2)
+library(themis) #package to deal with unbalanced data
 style <- theme(
   axis.line = element_line(colour = "black"),
   axis.text.x = element_text(size = 30, colour = "black", angle = 90),
@@ -25,25 +27,25 @@ style <- theme(
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
 #inter
-data_env <- read.csv(
-  "./data/interim/migration_env_inter.csv",
-  header = TRUE,
-  sep = ","
-) %>%
-  mutate(
-    arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
-    departure = ymd_hms(departure, tz = "UTC", truncated = 3),
-    date = ymd_hms(date, tz = "UTC", truncated = 3)
-  ) %>%
-  group_by(tag_serial_number) %>%
-  filter(date > date[[1]] + days(1))
+# data_env <- read.csv(
+#   "./data/interim/migration_env_inter.csv",
+#   header = TRUE,
+#   sep = ","
+# ) %>%
+#   mutate(
+#     arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
+#     departure = ymd_hms(departure, tz = "UTC", truncated = 3),
+#     date = ymd_hms(date, tz = "UTC", truncated = 3)
+#   ) %>%
+#   group_by(tag_serial_number) %>%
+#   filter(date > date[[1]] + days(1))
 
 #raw
-# data_env <- read_csv(
-#   './data/interim/migration_env_filter.csv',
-#   show_col_types = FALSE
-# ) %>%
-#   group_by(tag_serial_number) #%>%
+data_env <- read_csv(
+  './data/interim/migration_env_filter.csv',
+  show_col_types = FALSE
+) %>%
+  group_by(tag_serial_number) #%>%
 
 ##filter(arrival > arrival[[1]] + days(1)) #DIT WERKT NIET! zo valt het eerste
 #datapunt volledig weg (dit is veel meer dan 1 dag dat je wegsmeet!!)
@@ -297,46 +299,192 @@ ggsave(
 # GLMM Conditions
 ######################################################
 library(glmm)
-
 set.seed(1235)
-data$label_bin <- NA
 
-#glmm for onset
-# data <- data %>%
-#   group_by(tag_serial_number) %>%
-#   filter(row_number() <= first_migratory_idx[1]) %>%
-#   ungroup()
-logic_scale <- TRUE
+######################################################
+#Prepare data
+data$label_bin <- NA
+true_scale <- TRUE
+
+#use accumulated R
+data <- data %>%
+  group_by(tag_serial_number) %>%
+  mutate(R = cumsum(replace_na(R, 0))) %>%
+  ungroup()
+
+#scale data
 data_env <- data %>%
   mutate(
-    label_bin = replace(label_bin, cluster == 1, 0),
-    label_bin = replace(label_bin, cluster == 2, 1),
+    label_bin = replace(label_bin, cluster == 1, 0), #resident = 0
+    label_bin = replace(label_bin, cluster == 2, 1), #migration = 1
     tag_serial_number = as.factor(tag_serial_number),
     year = as.factor(year), # center V + Tw + Q + photoperiod + R
-    Tw = scale(Tw, scale = logic_scale),
-    photoperiod = scale(photoperiod, scale = logic_scale),
-    Q = scale(Q, scale = logic_scale),
-    V = scale(V, scale = logic_scale),
-    R = scale(R, scale = logic_scale)
+    Tw = scale(Tw, scale = true_scale),
+    photoperiod = scale(photoperiod, scale = true_scale),
+    Q = scale(Q, scale = true_scale),
+    V = scale(V, scale = true_scale),
+    R = scale(R, scale = true_scale)
   ) %>%
   filter(!is.na(label_bin))
 
-#Is the data scewed?
-min_n <- min(table(data_env$label))
-data_balanced <- data_env %>%
-  group_by(label) %>%
-  slice_sample(n = min_n, replace = TRUE) %>%
-  ungroup()
+
+######################################################
+#Analyse the data
+
+#Is the data skewed?
+skew_table <- table(data_env$label)
 
 table(data_balanced$label)
-# glm
+
+#Is the data correlated
+#correlogram
+cols <- as.factor(data_env$label)
+palette <- c("resident" = "blue", "migration" = "red")
+col_vec <- palette[as.character(cols)]
+
+pairs(
+  data_env %>% dplyr::select(Tw, Q, V, photoperiod, R),
+  col = adjustcolor(col_vec, alpha.f = 0.5),
+  pch = 22
+)
+
+#correlation matrix
+cor_mat <- data_env %>%
+  dplyr::select(Tw, Q, V, photoperiod, R) %>%
+  cor(use = "pairwise.complete.obs")
+
+ggplot(data_env, aes(x = V, y = Tw, color = label)) +
+  geom_point()
+
+######################################################
+# RANDOM UNDERSAMPLING
+min_n <- min(skew_table)
+data_balanced <- data_env %>%
+  group_by(label) %>%
+  slice_sample(n = min_n, replace = FALSE) %>%
+  ungroup()
+
+#correlogram balanced
+pairs(
+  data_balanced %>% dplyr::select(Tw, Q, V, photoperiod, R),
+  col = adjustcolor(col_vec, alpha.f = 0.5),
+  pch = 22
+)
+
+#correlation matrix
+cor_mat <- data_balanced %>%
+  dplyr::select(Tw, Q, V, photoperiod, R) %>%
+  cor(use = "pairwise.complete.obs")
+#STILL HIGHLY correlation
+#Enkel nog Tw en Q houden???
+
+#SMOTE (OVERSAMPLING)
+arrival_circadian_fac <- relevel(
+  as.factor(data_env$arrival_circadian),
+  ref = "night"
+)
+orig_levels <- levels(arrival_circadian_fac)
+year_fac <- as.factor(data_env$year)
+orig_year_levels <- levels(year_fac)
+tag_serial_number_fac <- as.factor(data_env$tag_serial_number)
+orig_tag_levels <- levels(tag_serial_number_fac)
+
+data_env_t <- data_env %>%
+  select(
+    label_bin,
+    Tw,
+    Q,
+    V,
+    photoperiod,
+    R,
+    tag_serial_number,
+    year,
+    arrival_circadian
+  ) %>%
+  mutate(
+    label_bin = factor(
+      label_bin,
+      levels = c(0, 1),
+      labels = c("resident", "migration")
+    ),
+    tag_serial_number = as.numeric(tag_serial_number),
+    year = as.numeric(year),
+    arrival_circadian = as.numeric(arrival_circadian_fac)
+  )
+data_balanced <- themis::smote(data_env_t, "label_bin", over_ratio = 1) %>%
+  mutate(
+    tag_serial_number = factor(
+      orig_tag_levels[tag_serial_number],
+      levels = orig_tag_levels
+    ),
+    year = factor(
+      orig_year_levels[as.numeric(year)],
+      levels = orig_year_levels
+    ),
+    arrival_circadian = as.character(factor(
+      orig_levels[arrival_circadian],
+      levels = orig_levels
+    )),
+    label_bin = as.numeric(recode(label_bin, "resident" = 0, "migration" = 1))
+  )
+
+#correlogram balanced
+pairs(
+  data_balanced %>% dplyr::select(Tw, Q, V, photoperiod, R),
+  col = adjustcolor(col_vec, alpha.f = 0.5),
+  pch = 22
+)
+
+#correlation matrix
+cor_mat <- data_balanced %>%
+  dplyr::select(Tw, Q, V, photoperiod, R) %>%
+  cor(use = "pairwise.complete.obs")
+
+######################################################
+# Build model
+
+#glm
 first_mod_glm <- glm(
-  label_bin ~ Tw + photoperiod + arrival_circadian + Q + V,
-  data = data_env,
+  label_bin ~ Tw + arrival_circadian + V + Q + R,
+  data = data_balanced,
   family = binomial
 )
 
+#glmm
+mc_size <- 10^5
+clust <- makeCluster(4) #clusterise to decrease runtime
+
+mod_tag <- glmm(
+  label_bin ~ V + Tw + Q + R,
+  ~ 0 + tag_serial_number,
+  varcomps.names = "tag_serial_number",
+  data = data_balanced,
+  family = bernoulli.glmm,
+  m = mc_size,
+  cluster = clust
+)
+
+mod_tag_year <- glmm(
+  label_bin ~ V + Tw + Q + R,
+  list(~ 0 + tag_serial_number, ~ 0 + year),
+  varcomps.names = list("tag_serial_number", "year"),
+  data = data_env,
+  family = bernoulli.glmm,
+  m = 10^4
+)
+
+mod_year <- glmm(
+  label_bin ~ V + Tw + Q + photoperiod + R,
+  ~ 0 + year,
+  varcomps.names = "year",
+  data = data_env,
+  family = bernoulli.glmm,
+  m = 10^4
+)
+
+######################################################
 #check assumptions
+
 #E(epsilon) = 0?
 png("./figures/onset_of_migration/gl(m)m/glm_residuals.png")
 g <- plot(first_mod_glm$fitted.values, first_mod_glm$residuals) +
@@ -348,36 +496,6 @@ g <- plot(first_mod_glm$fitted.values, first_mod_glm$residuals) +
   )
 dev.off()
 
-# glmm
-mod_tag_year <- glmm(
-  label_bin ~ V + Tw + Q + photoperiod + R,
-  list(~ 0 + tag_serial_number, ~ 0 + year),
-  varcomps.names = list("tag_serial_number", "year"),
-  data = data_env,
-  family = bernoulli.glmm,
-  m = 10^4
-)
-
-clust <- makeCluster(4)
-mod_tag <- glmm(
-  label_bin ~ V + Tw + Q + photoperiod + R,
-  ~ 0 + tag_serial_number,
-  varcomps.names = "tag_serial_number",
-  data = data_balanced,
-  family = bernoulli.glmm,
-  m = 10^5,
-  cluster = clust
-)
-mod_year <- glmm(
-  label_bin ~ V + Tw + Q + photoperiod + R,
-  ~ 0 + year,
-  varcomps.names = "year",
-  data = data_env,
-  family = bernoulli.glmm,
-  m = 10^4
-)
-
-
 g <- plot(first_mod$fitted.values, first_mod$residuals) +
   abline(h = 0, col = "red") +
   lines(
@@ -386,36 +504,113 @@ g <- plot(first_mod$fitted.values, first_mod$residuals) +
     lwd = 2
   )
 
-#monte carlo size large enough for our needs?
+#monte carlo size large enough?
 #checking that the MC se are way smaller than the se of the coeffiecient estimates
 #se(mod_tag) vs mcse(mod_tag)
 #10^3 NOT LARGE ENOUGH
 
+#################################################################################
+#Check performance
 mod <- mod_tag
+
+#calculate AIC
 logLik_glmm <- logLik(mod)
 n_params <- length(mod$beta) + length(mod$nu)
 AIC_glmm <- -2 * as.numeric(logLik_glmm) + 2 * n_params
 #keep only tag_serial_number as random effect
 
+#accuracy
+# Get predicted probabilities
+# 1. Get the linear predictor (fixed effects only)
+X <- model.matrix(~ V + Tw + Q + R, data = data_balanced)
+lin_pred <- as.numeric(X %*% mod_tag$beta)
+
+# 2. If you want to include random effects (optional, more complex):
+# Get the random effect for each observation
+rand_eff <- mod_tag$nu[data_balanced$tag_serial_number]
+
+# Add random effects to linear predictor
+lin_pred <- lin_pred + rand_eff
+
+# 3. Convert to probabilities (for binomial family)
+pred_probs <- 1 / (1 + exp(-lin_pred))
+
+
+# Convert probabilities to class labels (threshold 0.5)
+pred_class <- ifelse(pred_probs > 0.5, 1, 0)
+
+# True labels (make sure to use the same data as in the model)
+true_class <- data_balanced$label_bin
+
+# Calculate accuracy
+accuracy <- mean(pred_class == true_class)
+print(accuracy)
+
+##################################################################################
+#Discussion
+
+# weird values for Tw and Q?
+#Alles op een hoop --> meer migratory datapoints bij lage Tw
+#MAAR houd bv. Q constant --> bij stijging in Tw minder
 # OPMERKELIJK!
-# HT COMBINEREN VAN VARIABELEN GEEFT EEN OMGEKEERDE RELATIE MET T_W
+# HET COMBINEREN VAN VARIABELEN GEEFT EEN OMGEKEERDE RELATIE MET T_W
 # HOGERE WAARDEN VAN T_W LEIDEN TOT EEN HOGERE KANS OP MIGRATIE
-# IDEAL MIGRATIE SCENARIO = LAGER PHOTOPERIODE MAAR hoge TW --> dit zijn de condities waar de paling aan onderhevig is meer afwaarst in de rivier!
+# Zet Q vast --> verhoog Tw --> migratiekans stijgt
 
-#onset of migration
-clust <- makeCluster(4)
-mod_tag <- glmm(
-  label_bin ~ Tw + Q + R + photoperiod,
-  ~ 0 + tag_serial_number,
-  varcomps.names = "tag_serial_number",
-  data = data_env,
-  family = bernoulli.glmm,
-  m = 10^5,
-  cluster = clust
-)
+#plot Tw and circadian oncircular plot
+Time_min <- min(data$arrival)
+Time_max <- max(data$departure)
+All_arrival_days <- unique(round(data$arrival, units = "days"))
+L10_077_Tw <- read_csv(
+  './data/interim/processed/L07_077_Tw.csv',
+  show_col_types = FALSE
+) %>%
+  filter(round(Timestamp, units = "days") %in% All_arrival_days) %>%
+  mutate(
+    hour_arrival = factor(hour(Timestamp), levels = 0:23),
+    day_arrival = factor(round(Timestamp, units = "days"))
+  ) %>%
+  group_by(day_arrival) %>%
+  mutate(T_scale = Value - mean(Value, na.rm = TRUE)) %>%
+  ungroup()
 
-first_mod_glm <- glm(
-  label_bin ~ Tw + Q + R + photoperiod,
-  data = data_env,
-  family = binomial
-)
+
+data <- data %>%
+  mutate(hour_arrival = factor(hour(arrival), levels = 0:23)) %>%
+  filter(!is.na(cluster))
+
+p <- ggplot() +
+  geom_bar(data = data, aes(fill = arrival_circadian, x = hour_arrival)) + #aes(fill = arrival_circadian)
+  geom_boxplot(
+    data = L10_077_Tw,
+    aes(y = T_scale * 20 - 1, x = hour_arrival),
+    fill = NA,
+    color = "black",
+    width = 0.7,
+    outlier.shape = NA
+  ) +
+  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
+  style +
+  labs(title = "Onset of migration") + #remove legend
+  guides(fill = guide_legend(title = "Circadian phase")) +
+  scale_y_continuous(
+    sec.axis = sec_axis(
+      ~ . / 20 + 1,
+      name = "Tw (°C)"
+    )
+  )
+plot(p)
+
+p <- ggplot(L10_077_Tw, aes(x = hour_arrival, y = T_scale)) +
+  geom_boxplot(width = 0.7, outlier.shape = NA) + #aes(group = day_arrival)
+  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
+  style +
+  labs(title = "Temperature (°C)")
+plot(p)
+
+p <- ggplot(L10_077_Tw, aes(x = hour_arrival, y = T_scale)) +
+  geom_line(aes(group = day_arrival), width = 0.7, outlier.shape = NA) + #aes(group = day_arrival)
+  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
+  style +
+  labs(title = "Temperature (°C)")
+plot(p)

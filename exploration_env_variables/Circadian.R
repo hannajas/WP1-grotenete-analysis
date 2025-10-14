@@ -18,7 +18,7 @@ source('./src/circadian_rhythm_function.R')
 
 # Load data --------------------------------------------------------------
 zes00a_1066_Q <- read_csv(
-  './data/interim/processed/zes00a_1066_Q.csv',
+  './data/interim/processed/zes00a_1066_Q.csv', #just for timerange
   show_col_types = FALSE
 )
 
@@ -26,7 +26,7 @@ data_eels <- read_csv(
   './data/interim/migration_env_filter.csv',
   show_col_types = FALSE
 ) %>%
-  filter(!tag_serial_number %in% c(1171747, 1171751, 1294168, 1294172)) %>%
+  filter(!tag_serial_number %in% c(1171747, 1171751, 1294168, 1294172)) %>% #four eels with only one detection
   mutate(
     label = ifelse(
       cluster == 1,
@@ -72,6 +72,7 @@ twilight_log <- FALSE
 
 # Function to compute circadian weights ----------------------------------
 compute_circadian_weights <- function(circadian, phase_defs) {
+  #duration proportions of each phase
   weights <- map(
     phase_defs,
     ~ as.duration(circadian[[.[2]]] - circadian[[.[1]]]) / ddays(1)
