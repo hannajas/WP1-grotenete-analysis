@@ -5,14 +5,15 @@ library(ggplot2)
 library(themis) #package to deal with unbalanced data
 style <- theme(
   axis.line = element_line(colour = "black"),
-  axis.text.x = element_text(size = 30, colour = "black", angle = 90),
+  axis.text.x = element_text(size = 25, colour = "black", angle = 90),
   axis.title.x = element_text(size = 30),
-  axis.text.y = element_text(size = 30, colour = "black"),
+  axis.text.y = element_text(size = 30),
   axis.title.y = element_text(size = 30),
   strip.text = element_text(size = 22), #title of facet wrap bigger
   legend.text = element_text(size = 27),
   legend.title = element_text(size = 30),
 )
+library(lme4)
 
 ########################################################
 #make selection in the data
@@ -27,25 +28,25 @@ style <- theme(
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
 #inter
-# data_env <- read.csv(
-#   "./data/interim/migration_env_inter.csv",
-#   header = TRUE,
-#   sep = ","
-# ) %>%
-#   mutate(
-#     arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
-#     departure = ymd_hms(departure, tz = "UTC", truncated = 3),
-#     date = ymd_hms(date, tz = "UTC", truncated = 3)
-#   ) %>%
-#   group_by(tag_serial_number) %>%
-#   filter(date > date[[1]] + days(1))
+data_env <- read.csv(
+  "./data/interim/migration_env_inter.csv",
+  header = TRUE,
+  sep = ","
+) %>%
+  mutate(
+    arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
+    departure = ymd_hms(departure, tz = "UTC", truncated = 3),
+    date = ymd_hms(date, tz = "UTC", truncated = 3)
+  ) %>%
+  group_by(tag_serial_number) %>%
+  filter(date > date[[1]] + days(1))
 
 #raw
-data_env <- read_csv(
-  './data/interim/migration_env_filter.csv',
-  show_col_types = FALSE
-) %>%
-  group_by(tag_serial_number) #%>%
+# data_env <- read_csv(
+#   './data/interim/migration_env_filter.csv',
+#   show_col_types = FALSE
+# ) %>%
+#   group_by(tag_serial_number) #%>%
 
 ##filter(arrival > arrival[[1]] + days(1)) #DIT WERKT NIET! zo valt het eerste
 #datapunt volledig weg (dit is veel meer dan 1 dag dat je wegsmeet!!)
@@ -453,34 +454,27 @@ first_mod_glm <- glm(
 #glmm
 mc_size <- 10^5
 clust <- makeCluster(4) #clusterise to decrease runtime
+mixed <- "tag_serial_number" #list("tag_serial_number", "year")
 
 mod_tag <- glmm(
-  label_bin ~ V + Tw + Q + R,
+  label_bin ~ Tw + Q + V + arrival_circadian + R,
   ~ 0 + tag_serial_number,
-  varcomps.names = "tag_serial_number",
+  varcomps.names = mixed,
   data = data_balanced,
   family = bernoulli.glmm,
   m = mc_size,
   cluster = clust
 )
 
-mod_tag_year <- glmm(
-  label_bin ~ V + Tw + Q + R,
-  list(~ 0 + tag_serial_number, ~ 0 + year),
-  varcomps.names = list("tag_serial_number", "year"),
+mod_tag <- glmer(
+  label_bin ~ Tw + (1 | tag_serial_number) + R + Q + V, #arrival_circadian
   data = data_env,
-  family = bernoulli.glmm,
-  m = 10^4
+  family = binomial,
+  control = glmerControl(optimizer = "bobyqa"),
+  #nAGQ = 10,
+  contrasts = list(arrival_circadian = "contr.sum")
 )
-
-mod_year <- glmm(
-  label_bin ~ V + Tw + Q + photoperiod + R,
-  ~ 0 + year,
-  varcomps.names = "year",
-  data = data_env,
-  family = bernoulli.glmm,
-  m = 10^4
-)
+summary(mod_tag)
 
 ######################################################
 #check assumptions
@@ -515,26 +509,12 @@ mod <- mod_tag
 
 #calculate AIC
 logLik_glmm <- logLik(mod)
-n_params <- length(mod$beta) + length(mod$nu)
+n_params <- length(mod$beta) - 1 + length(mod$nu)
 AIC_glmm <- -2 * as.numeric(logLik_glmm) + 2 * n_params
-#keep only tag_serial_number as random effect
 
 #accuracy
 # Get predicted probabilities
-# 1. Get the linear predictor (fixed effects only)
-X <- model.matrix(~ V + Tw + Q + R, data = data_balanced)
-lin_pred <- as.numeric(X %*% mod_tag$beta)
-
-# 2. If you want to include random effects (optional, more complex):
-# Get the random effect for each observation
-rand_eff <- mod_tag$nu[data_balanced$tag_serial_number]
-
-# Add random effects to linear predictor
-lin_pred <- lin_pred + rand_eff
-
-# 3. Convert to probabilities (for binomial family)
-pred_probs <- 1 / (1 + exp(-lin_pred))
-
+pred_probs <- predict(mod_tag, type = "response")
 
 # Convert probabilities to class labels (threshold 0.5)
 pred_class <- ifelse(pred_probs > 0.5, 1, 0)
@@ -567,7 +547,7 @@ L10_077_Tw <- read_csv(
 ) %>%
   filter(round(Timestamp, units = "days") %in% All_arrival_days) %>%
   mutate(
-    hour_arrival = factor(hour(Timestamp), levels = 0:23),
+    hour_arrival = factor(hour(Timestamp), levels = as.character(0:23)),
     day_arrival = factor(round(Timestamp, units = "days"))
   ) %>%
   group_by(day_arrival) %>%
@@ -576,41 +556,43 @@ L10_077_Tw <- read_csv(
 
 
 data <- data %>%
-  mutate(hour_arrival = factor(hour(arrival), levels = 0:23)) %>%
+  mutate(hour_arrival = factor(hour(arrival), levels = as.character(0:23))) %>%
   filter(!is.na(cluster))
 
 p <- ggplot() +
   geom_bar(data = data, aes(fill = arrival_circadian, x = hour_arrival)) + #aes(fill = arrival_circadian)
   geom_boxplot(
     data = L10_077_Tw,
-    aes(y = T_scale * 20 - 1, x = hour_arrival),
+    aes(y = T_scale * 9 + 20, x = hour_arrival),
     fill = NA,
-    color = "black",
-    width = 0.7,
-    outlier.shape = NA
+    color = "#544545",
+    width = 0.7
   ) +
-  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
+  coord_radial(r.axis.inside = TRUE, expand = FALSE, direction = 1) +
+  theme(
+    #axis.title.y = element_text(size = 30),
+    axis.text.r = element_text(size = 27, color = "black"),
+    #axis.text.y = element_text(size = 27, color = "black"),
+    axis.text.y.right = element_text(size = 27, color = "#544545")
+  ) +
   style +
-  labs(title = "Onset of migration") + #remove legend
-  guides(fill = guide_legend(title = "Circadian phase")) +
+  guides(
+    fill = guide_legend(title = "Circadian phase"),
+    r.sec = guide_axis(
+      theme = theme(axis.text.r = element_text(colour = "#544545"))
+    )
+  ) +
   scale_y_continuous(
     sec.axis = sec_axis(
-      ~ . / 20 + 1,
+      ~ (. - 20) / 9,
       name = "Tw (°C)"
-    )
-  )
+    ),
+    name = "# eels"
+  ) +
+  scale_x_discrete(drop = FALSE)
 plot(p)
-
-p <- ggplot(L10_077_Tw, aes(x = hour_arrival, y = T_scale)) +
-  geom_boxplot(width = 0.7, outlier.shape = NA) + #aes(group = day_arrival)
-  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
-  style +
-  labs(title = "Temperature (°C)")
-plot(p)
-
-p <- ggplot(L10_077_Tw, aes(x = hour_arrival, y = T_scale)) +
-  geom_line(aes(group = day_arrival), width = 0.7, outlier.shape = NA) + #aes(group = day_arrival)
-  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
-  style +
-  labs(title = "Temperature (°C)")
-plot(p)
+ggsave(
+  "./figures/Circadian/circadian_non_tidal_TW.png",
+  width = 10,
+  height = 10
+)
