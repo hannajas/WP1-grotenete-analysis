@@ -28,25 +28,25 @@ library(lme4)
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
 #inter
-data_env <- read.csv(
-  "./data/interim/migration_env_inter.csv",
-  header = TRUE,
-  sep = ","
-) %>%
-  mutate(
-    arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
-    departure = ymd_hms(departure, tz = "UTC", truncated = 3),
-    date = ymd_hms(date, tz = "UTC", truncated = 3)
-  ) %>%
-  group_by(tag_serial_number) %>%
-  filter(date > date[[1]] + days(1))
+# data_env <- read.csv(
+#   "./data/interim/migration_env_inter.csv",
+#   header = TRUE,
+#   sep = ","
+# ) %>%
+#   mutate(
+#     arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
+#     departure = ymd_hms(departure, tz = "UTC", truncated = 3),
+#     date = ymd_hms(date, tz = "UTC", truncated = 3)
+#   ) %>%
+#   group_by(tag_serial_number) %>%
+#   filter(date > date[[1]] + days(1))
 
 #raw
-# data_env <- read_csv(
-#   './data/interim/migration_env_filter.csv',
-#   show_col_types = FALSE
-# ) %>%
-#   group_by(tag_serial_number) #%>%
+data_env <- read_csv(
+  './data/interim/migration_env_filter.csv',
+  show_col_types = FALSE
+) %>%
+  group_by(tag_serial_number) #%>%
 
 ##filter(arrival > arrival[[1]] + days(1)) #DIT WERKT NIET! zo valt het eerste
 #datapunt volledig weg (dit is veel meer dan 1 dag dat je wegsmeet!!)
@@ -176,13 +176,13 @@ list <- split(data_env, data_env$tag_serial_number) # lijst van alle eels
 # identificeer het eerste knikpunt (tijdstip t_k) op plaats x_k ("migratory for the first time")
 #empty dataframe
 datatemp <- data.frame()
+# identificeer een range [t_k - r; t_k]
+range <- as.period(1, "days")
 
 for (i in 1:length(list)) {
   data_eel <- list[[i]] # neem de eerste eel
   # identificeer het eerste knikpunt (tijdstip t_k)
   t_k <- data_eel$date[data_eel$first_migratory_idx[1]]
-  # identificeer een range [t_k - r; t_k]
-  range <- as.period(1, "days")
   # Interpoleer de Q's naar punt x_k (Q_{inter,k})
   Q_inter_k <- data_eel[[variable]]
   deltaQ_inter_k <- data_eel[[delta_variable]]
@@ -298,6 +298,10 @@ ggsave(
 
 ######################################################
 # GLMM Conditions
+# How are the environmental conditions different from an eel that started migration VS an eel still resident
+# Is already in the question timing and place is partly what divides the classes
+# Miss is GLMM daarom nietzoveel zeggend?
+#gaan we er nietvanuit (expert knoledge dat er )
 ######################################################
 library(glmm)
 set.seed(1235)
@@ -507,11 +511,6 @@ g <- plot(first_mod$fitted.values, first_mod$residuals) +
 #Check performance
 mod <- mod_tag
 
-#calculate AIC
-logLik_glmm <- logLik(mod)
-n_params <- length(mod$beta) - 1 + length(mod$nu)
-AIC_glmm <- -2 * as.numeric(logLik_glmm) + 2 * n_params
-
 #accuracy
 # Get predicted probabilities
 pred_probs <- predict(mod_tag, type = "response")
@@ -520,7 +519,7 @@ pred_probs <- predict(mod_tag, type = "response")
 pred_class <- ifelse(pred_probs > 0.5, 1, 0)
 
 # True labels (make sure to use the same data as in the model)
-true_class <- data_balanced$label_bin
+true_class <- data_env$label_bin #data_balanced$label_bin
 
 # Calculate accuracy
 accuracy <- mean(pred_class == true_class)
@@ -596,3 +595,35 @@ ggsave(
   width = 10,
   height = 10
 )
+
+######################################################
+# GLMM Trigger
+# How are the environm. conditions different in de starting period of migration VS before?
+######################################################
+range <- as.period(1, "days") #1 day range
+data$trigger <- NA
+data_mod <- data %>%
+  group_by(tag_serial_number) %>%
+  filter(row_number() <= first_migratory_idx[1]) %>%
+  mutate(
+    trigger = ifelse(date > (date[length(date)] - as.duration(range)), 1, 0),
+    tag_serial_number = as.factor(tag_serial_number),
+    Tw = scale(Tw, scale = true_scale),
+    delta_Tw = scale(delta_Tw, scale = true_scale),
+    photoperiod = scale(photoperiod, scale = true_scale),
+    Q = scale(Q, scale = true_scale),
+    delta_Q = scale(delta_Q, scale = true_scale),
+    V = scale(V, scale = true_scale),
+    R = scale(R, scale = true_scale) #1 part of trigger, 0 rest
+  ) %>%
+  ungroup()
+
+mod_tag <- glmer(
+  trigger ~ (1 | tag_serial_number) + Q + delta_Q + delta_Tw, #arrival_circadian
+  data = data_mod,
+  family = binomial,
+  control = glmerControl(optimizer = "bobyqa"),
+  #nAGQ = 10,
+  contrasts = list(arrival_circadian = "contr.sum")
+)
+summary(mod_tag)

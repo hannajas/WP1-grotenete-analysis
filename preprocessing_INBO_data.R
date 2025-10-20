@@ -6,6 +6,7 @@ library(patchwork)
 
 # Source functions
 source("./src/calculate_speed_function.R")
+source("./src/add_segments_function.R")
 
 # Upload distance matrix
 distance_matrix <- read.csv(

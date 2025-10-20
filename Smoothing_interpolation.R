@@ -13,6 +13,9 @@ library(dplyr)
 library(adehabitatLT)
 library(factoextra)
 
+# Source functions
+source("./src/add_segments_function.R")
+
 ##########################################################################################
 # simple interpolation of the trajectory
 ##########################################################################################

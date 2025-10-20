@@ -10,7 +10,7 @@ library(usethis)
 # Load data
 ##############################################################################################################
 data <- read_csv(
-  './data/interim/migration_env_filter.csv',
+  './data/interim/migration_filter.csv',
   show_col_types = FALSE
 )
 
@@ -43,10 +43,10 @@ for (i in 1:length(mydfnew.split.eel)) {
 }
 data_cluster <- bind_rows(mydfnew.split.eel)
 #save as csv
-write_csv(data_cluster, "./data/interim/migration_env_filter.csv")
+write_csv(data_cluster, "./data/interim/migration_filter.csv")
 
 mydfnew.split.eel <- split(data_cluster, data$tag_serial_number)
-pdf("./figures/Clustering/kmeans_log_sep_eels.pdf")
+pdf("./figures/Clustering/kmeans_log_sep_eels_test.pdf")
 for (i in 1:length(mydfnew.split.eel)) {
   mydfnew.temp <- mydfnew.split.eel[[i]]
   mydfnew.temp$cluster <- as.factor(mydfnew.temp$cluster)

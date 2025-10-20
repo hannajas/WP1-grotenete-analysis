@@ -8,7 +8,7 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 ## Project structure
 
 ### Data
-<mark>Data last updated on 14-10-2025</mark>
+<mark>Data last updated on 20-10-2025</mark>
 
 * `/raw:`
 	+ `migration.csv`: dataset containing eel tracks and speed
@@ -59,7 +59,7 @@ Data collection and explorative analysis I
     + `\metadata.R:`: processing metadata
         - e.g calculated distance to source based on lookup table
     + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities)
-* `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration_filter.csv`)
+* `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration.csv` and `/interim/migration_filter.csv`)
     + timestamps in raw data are in timezone UTC
     + recalcutate the smooth eel track (remove timelimit for which a new track was started)
     + recalculate the distance_to_source (because of higher resolution if the lookup table in comparison to the original distance matrix)
@@ -73,13 +73,9 @@ Data collection and explorative analysis I
     + add coordinates of the interpolation_location (making use of the lookup table)
 * `explorative_data_analysis.R:` summaries of migration speeds
 
-Trajectory smoothing
-* `Smoothing_interpolation.R:` (load `/interim/migration_env_filter.csv`)
-    + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv` (now: resolution = 15 min)
-* `Smoothing.R:` experimenting with crawl and dbscan
-
 Clustering (resting + resident) Vs migratory
-* `Clustering.R:` kmeans (different options were tested BUT log raw data, seperate eels and k=2 works best!)
+* `Clustering.R:` (add column to `/interim/migration_filter.csv`)
+    + kmeans (different options were tested BUT log raw data, seperate eels and k=2 works best!)
     + working with interpolated data --> even more skewed data (in the other direction)
     + silhouette width method + biological knowledge --> $k = 2$
     + looking at seperate eels (less false resident in straightforward migration part)
@@ -87,9 +83,9 @@ Clustering (resting + resident) Vs migratory
     + 1 = resident, 2 = migration
 
 Explorative analysis II
-* `link_env_variables.R:` linking the environmental variables with the telemetry data (R becomes the accumulated data)
+* `link_env_variables.R:` linking the environmental variables with the telemetry raw data (R becomes the accumulated data)
     
-    RAW DATA For each type of environmental data (adding to `/interim/migration_env_filter.csv`):
+    For each type of environmental data (upload `./data/interim/migration_filter.csv` and save to `./data/interim/migration_env_filter.csv`):
 
     + For each data point: `\src\concat_env_var_function.R:` function to average the environmental data over the swimtimes of the eels between 2 receivers.
     + in `\src\concat_all_env_var_function.R:` de outputs van `concat_env_var_function.R` voor verschillende meetlocaties van de zelfde variabele worden gebundeld.
@@ -99,10 +95,14 @@ Explorative analysis II
             - Q is normalised over traject
         - 2D (Rainfall): involve all datapoints
 
+* Trajectory smoothing
+    + `Smoothing_interpolation.R:` (load `/interim/migration_env_filter.csv`)
+        * Interpolation of the trajectory: output saved in `/interim/migration_inter.csv` (now: resolution = 15 min)
+    + `Smoothing.R:` experimenting with crawl and dbscan
 
-    INTERPOLATED DATA
+* `link_env_variables_inter.R:` linking the environmental variables with the telemetry interpolated data (R becomes the accumulated data)
 
-    + Interpolated telemetry data is created in `Smoothing.R` (load `/interim/migration_inter.csv`)
+    + Interpolated telemetry data is created in `Smoothing_interpolation.R` (load `/interim/migration_inter.csv`)
     + Here for all environmental data:
         - `align_resolutions_function.R`: The resolutions are fix to a given input resolution (the resolution of the interpolated data)
         - `\src\inverse_distance_function.R:` same as above
@@ -112,9 +112,13 @@ Explorative analysis II
 * Onset of migration
     + `onset_migration.R:` Resident Vs migration: Is there a difference in environmental variables? Are there short-term triggers to onset migration?
         - data selection: non-tidal, remove the first day after release
+            - add column: label --> 'resident' and 'migration' and later for the model: label_bin --> 0 = resident and 1 = migration
         - Boxplot to see difference in conditions
         - Boxplots to see triggers
-
+* During migration
+    + `during_migration.R:`
+        - 
+            - add column: label --> 'migratory' and 'resting' and later for the model: label_bin --> 0 = migratory and 1 = resting
 
 * `/visualisation:`
     + `create_eel_track_env_var_plot.R:` Each eel its trajectory plotted together with an environmental variable
@@ -139,9 +143,6 @@ Try outs
 
 
 ## Bugs
-* `align_resolutions_function` lijkt nog niet de werken voor rainfall ("R")
-* `inverse_distance_function.R` geeft een warning die gaat over het find_receiver deel (in denk dat het 2de argument) in telemetry_data$temp <- replace( niet even lang is ander waar het het zou moeten worden ingevuld)
-* `link_env_variables.R`: data_inter_env$photoperiod is niet goed berekend!
 
 ## Order of migration csv
 Raw
