@@ -119,4 +119,4 @@ data_inter_env$S[data_inter_env$zone == "non-tidal"] <- NA
 data_inter_env$turb[data_inter_env$zone == "non-tidal"] <- NA
 data_inter_env$O[data_inter_env$zone == "non-tidal"] <- NA
 
-#write_csv(data_inter_env, "./data/interim/migration_env_inter.csv")
+write_csv(data_inter_env, "./data/interim/migration_env_inter.csv")

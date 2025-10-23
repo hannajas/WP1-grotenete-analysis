@@ -3,6 +3,7 @@ library(dplyr)
 library(geosphere)
 library(ggplot2)
 library(themis) #package to deal with unbalanced data
+library(lubridate)
 style <- theme(
   axis.line = element_line(colour = "black"),
   axis.text.x = element_text(size = 25, colour = "black", angle = 90),
@@ -23,6 +24,8 @@ library(lme4)
 #fill 'resident' and 'migration'
 #leave out the eels without onset (1294169, 1305785)
 #leave out eels with only one detection (1171747, 1171751, 1294168, 1294172)
+# fix variables
+true_scale <- TRUE
 
 # load and process data
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
@@ -296,13 +299,13 @@ ggsave(
 )
 
 
-######################################################
+############################################################################################################
 # GLMM Conditions
 # How are the environmental conditions different from an eel that started migration VS an eel still resident
 # Is already in the question timing and place is partly what divides the classes
 # Miss is GLMM daarom nietzoveel zeggend?
 #gaan we er nietvanuit (expert knoledge dat er )
-######################################################
+############################################################################################################
 library(glmm)
 set.seed(1235)
 
@@ -312,10 +315,10 @@ data$label_bin <- NA
 true_scale <- TRUE
 
 #use accumulated R
-data <- data %>%
-  group_by(tag_serial_number) %>%
-  mutate(R = cumsum(replace_na(R, 0))) %>%
-  ungroup()
+# data <- data %>%
+#   group_by(tag_serial_number) %>%
+#   mutate(R = cumsum(replace_na(R, 0))) %>%
+#   ungroup()
 
 #scale data
 data_env <- data %>%
@@ -450,8 +453,8 @@ cor_mat <- data_balanced %>%
 
 #glm
 first_mod_glm <- glm(
-  label_bin ~ Tw + arrival_circadian + V + Q + R,
-  data = data_balanced,
+  label_bin ~ Tw + arrival_circadian + V + R,
+  data = data_env,
   family = binomial
 )
 
@@ -471,11 +474,11 @@ mod_tag <- glmm(
 )
 
 mod_tag <- glmer(
-  label_bin ~ Tw + (1 | tag_serial_number) + R + Q + V, #arrival_circadian
-  data = data_env,
+  label_bin ~ Tw + (1 | tag_serial_number) + R + V,
+  data = data_balanced,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),
-  #nAGQ = 10,
+  nAGQ = 10,
   contrasts = list(arrival_circadian = "contr.sum")
 )
 summary(mod_tag)
@@ -541,7 +544,7 @@ Time_min <- min(data$arrival)
 Time_max <- max(data$departure)
 All_arrival_days <- unique(round(data$arrival, units = "days"))
 L10_077_Tw <- read_csv(
-  './data/interim/processed/L07_077_Tw.csv',
+  './data/interim/processed/L10_077_Tw.csv',
   show_col_types = FALSE
 ) %>%
   filter(round(Timestamp, units = "days") %in% All_arrival_days) %>%
@@ -600,6 +603,7 @@ ggsave(
 # GLMM Trigger
 # How are the environm. conditions different in de starting period of migration VS before?
 ######################################################
+# with interpolated data
 range <- as.period(1, "days") #1 day range
 data$trigger <- NA
 data_mod <- data %>%
@@ -618,12 +622,73 @@ data_mod <- data %>%
   ) %>%
   ungroup()
 
+L10_077_Tw <- read_csv(
+  './data/interim/processed/L10_077_Tw.csv',
+  show_col_types = FALSE
+) %>%
+  dplyr::select(Timestamp, Value) %>%
+  rename(Tw = Value) %>%
+  mutate(Tw = scale(Tw, scale = true_scale))
+
+L10_077_Q <- read_csv(
+  './data/interim/processed/L10_077_Q.csv',
+  show_col_types = FALSE
+) %>%
+  dplyr::select(Timestamp, Value) %>%
+  rename(Q = Value) %>%
+  mutate(Q = scale(Q, scale = true_scale))
+
+L10_077_V <- read_csv(
+  './data/interim/processed/L10_077_V.csv',
+  show_col_types = FALSE
+) %>%
+  dplyr::select(Timestamp, Value) %>%
+  rename(V = Value) %>%
+  mutate(V = scale(V, scale = true_scale))
+
+data_plot <- data_mod %>%
+  left_join(L10_077_Tw, by = c("date" = "Timestamp"), copy = TRUE) %>%
+  left_join(L10_077_Q, by = c("date" = "Timestamp"), copy = TRUE) %>%
+  left_join(L10_077_V, by = c("date" = "Timestamp"), copy = TRUE)
+
+#glm
+first_mod_glm <- glm(
+  trigger ~ Tw.y + V.y + R + Q.y,
+  data = data_plot,
+  family = binomial
+)
+summary(first_mod_glm)
+
 mod_tag <- glmer(
   trigger ~ (1 | tag_serial_number) + Q + delta_Q + delta_Tw, #arrival_circadian
   data = data_mod,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),
   #nAGQ = 10,
+  contrasts = list(arrival_circadian = "contr.sum")
+)
+summary(mod_tag)
+
+
+# with raw data
+# resident Vs first migratory point
+data_env <- data_env %>%
+  group_by(tag_serial_number) %>%
+  filter(row_number() <= first_migratory_idx[1]) %>%
+  ungroup() %>%
+  mutate(date = round_date(arrival, unit = "15M 0S"))
+
+data_plot <- data_env %>%
+  left_join(L10_077_Tw, by = c("date" = "Timestamp"), copy = TRUE) %>%
+  left_join(L10_077_Q, by = c("date" = "Timestamp"), copy = TRUE) %>%
+  left_join(L10_077_V, by = c("date" = "Timestamp"), copy = TRUE)
+
+mod_tag <- glmer(
+  label_bin ~ (1 | tag_serial_number) + V.y + Tw.y + R + Q.y,
+  data = data_plot,
+  family = binomial,
+  control = glmerControl(optimizer = "bobyqa"),
+  nAGQ = 10,
   contrasts = list(arrival_circadian = "contr.sum")
 )
 summary(mod_tag)

@@ -8,6 +8,8 @@ library(wateRinfo)
 library(tidyverse)
 library(rvest)
 library(sf)
+# source function
+source("./src/add_segments_function.R")
 
 # Load metadata
 metadata <- read_csv('./data/raw/metadata/Metadata.csv', show_col_types = FALSE)

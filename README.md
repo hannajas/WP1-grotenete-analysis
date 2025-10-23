@@ -58,7 +58,7 @@ Data collection and explorative analysis I
     + `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
     + `\metadata.R:`: processing metadata
         - e.g calculated distance to source based on lookup table
-    + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities)
+    + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities) and measured velocity
 * `preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration.csv` and `/interim/migration_filter.csv`)
     + timestamps in raw data are in timezone UTC
     + recalcutate the smooth eel track (remove timelimit for which a new track was started)
@@ -67,7 +67,10 @@ Data collection and explorative analysis I
         - `\src\calculate_speed_function.R:` function to calculate the speed for a dataframe with data from one eel
     + 'downstream' column: calculate wheter migration is downstream
     + 'downstream_migration' column: downstream and faster than a certain treshold? ME NIET DUIDELIJK
-    + add colums to divide the study area into different zones: tidal, transition and non-tidal (boundaries from Keirsebelik et al 2025)
+    + add colums to divide the study area into different zones (boundaries from Keirsebelik et al 2025):
+        - tidal: starting at transition Nete to Grote Nete (from gn-3)
+        - transition: 
+        - non-tidal: ending +- at convolution of Grote Nete and Wimp (last receiver: gn-6)
     + interpolate to find the middle between 2 receivers (interpolation_location)
     + add column to divide in segements: gn, rup, zes_up, zes_down
     + add coordinates of the interpolation_location (making use of the lookup table)

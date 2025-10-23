@@ -25,13 +25,13 @@ metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 #     date = ymd_hms(date, tz = "UTC", truncated = 3)
 #   ) %>%
 #   group_by(tag_serial_number)
+
 #raw
 data_env <- read_csv(
   './data/interim/migration_env_filter.csv',
   show_col_types = FALSE
 ) %>%
   group_by(tag_serial_number) #%>%
-
 
 data_env <- data_env %>%
   filter(zone == "non-tidal") %>% #| zone == "transition") %>%
@@ -63,7 +63,8 @@ data_env <- data_env %>%
         "resident"
     )
   ) %>%
-  filter(label != "resident") %>%
+ #filter(date >= date[first_migratory_idx] - days(1)) %>%
+ #filter(label != "resident") %>%
   ungroup()
 
 # load migration circadian
@@ -89,19 +90,20 @@ data <- left_join(
 # GLMM Conditions during migration
 ########################################################
 # migratory is there the "default" so migratory = 0
-######################################################
+########################################################
 #Prepare data
+data$label_bin <- NA
 true_scale <- TRUE
 data_env <- data %>%
   group_by(tag_serial_number) %>%
-  filter(row_number() >= first_migratory_idx[1]) %>%
+  #filter(row_number() >= first_migratory_idx[1]) %>%
   mutate(
-    label_bin = replace(label, cluster == 1, 1), #resident = 1
-    label_bin = replace(label, cluster == 2, 0), #migratory = 0
+    label_bin = replace(label_bin, cluster == 1, 1),
+    label_bin = replace(label_bin, cluster == 2, 0), #migratory = 0 and resting = 1
     label_bin = factor(
       label_bin,
       levels = c(0, 1),
-      labels = c("migration", "resident")
+      labels = c("migratory", "resting")
     ),
     tag_serial_number = as.factor(tag_serial_number),
     Tw = scale(Tw, scale = true_scale),
@@ -113,6 +115,7 @@ data_env <- data %>%
     V = scale(V, scale = true_scale),
     R = scale(R, scale = true_scale) #1 part of trigger, 0 rest
   ) %>%
+  filter(!is.na(label_bin)) %>%
   ungroup()
 
 
@@ -122,7 +125,7 @@ data_env <- data %>%
 skew_table <- table(data_env$label_bin)
 
 cols <- as.factor(data_env$label_bin)
-palette <- c("resident" = "blue", "migration" = "red")
+palette <- c("resting" = "red", "migratory" = "blue")
 col_vec <- palette[as.character(cols)]
 pairs(
   data_env %>% dplyr::select(Tw, Q, V, photoperiod, R),
@@ -141,8 +144,7 @@ ggplot(data_env, aes(x = delta_Q, y = delta_Tw, color = label_bin)) +
 ######################################################
 # Built model
 mod_tag <- glmer(
-  label_bin ~
-    (1 | tag_serial_number) + V + R + delta_Tw + delta_Q + photoperiod, #arrival_circadian + photoperiod + Q+ Tw
+  label_bin ~ (1 | tag_serial_number) + Q + R + photoperiod + Tw, #arrival_circadian + photoperiod + Q + Tw
   data = data_env,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),
@@ -150,6 +152,22 @@ mod_tag <- glmer(
   contrasts = list(arrival_circadian = "contr.sum")
 )
 summary(mod_tag)
+
+
+mod_tag <- glmer(
+  speed_m_s ~ (1 | tag_serial_number) + Q + R + photoperiod + Tw, #arrival_circadian + photoperiod + Q + Tw
+  data = data_env,
+  family = gaussian,
+  #control = glmerControl(optimizer = "bobyqa"),
+  #nAGQ = 10,
+  contrasts = list(arrival_circadian = "contr.sum")
+)
+summary(mod_tag)
+
+first_mod_glm <- glm(
+  log(speed_m_s) ~ Q + photoperiod + R + Tw, #delta_Tw + delta_Q + R + Tw + photoperiod + V
+  data = data_env
+)
 
 first_mod_glm <- glm(
   label_bin ~ delta_Q + photoperiod, #delta_Tw + delta_Q + R + Tw + photoperiod + V
@@ -173,7 +191,56 @@ print(accuracy)
 ######################################################
 # Visualize for each eel seperately
 data_plot <- data_env %>%
-  filter(tag_serial_number == 1294169)
-plot <- ggplot(data_plot) +
-  geom_point(aes(x = date, y = Tw, color = label_bin))
-plot
+  filter(tag_serial_number == 1305785)
+plot_1 <- ggplot(data_plot) +
+  geom_point(aes(x = date, y = V, color = label_bin), size = 2) + #color scale label_bin = 1 --> red
+  geom_point(aes(x = date, y = Tw, color = label_bin), size = 2, shape = "+") +
+  scale_color_manual(
+    values = c("resting" = "red", "migratory" = "blue"),
+    name = "State"
+  ) +
+  facet_wrap(~tag_serial_number, scales = "free")
+plot_1
+
+# plot L07 Q en Tw
+L10_077_Tw <- read_csv(
+  './data/interim/processed/L07_077_Tw.csv',
+  show_col_types = FALSE
+) %>%
+  dplyr::select(Timestamp, Value) %>%
+  rename(Tw = Value) %>%
+  mutate(Tw = scale(Tw, scale = true_scale))
+
+L10_077_Q <- read_csv(
+  './data/interim/processed/L10_077_Q.csv',
+  show_col_types = FALSE
+) %>%
+  dplyr::select(Timestamp, Value) %>%
+  rename(Q = Value) %>%
+  mutate(Q = scale(Q, scale = true_scale))
+
+L10_077_V <- read_csv(
+  './data/interim/processed/L10_077_V.csv',
+show_col_types = FALSE
+) %>%
+  dplyr::select(Timestamp, Value) %>%
+  rename(V = Value) %>%
+  mutate(V = scale(V, scale = true_scale))
+
+data_plot <- data_env %>%
+  left_join(L10_077_Tw, by = c("date" = "Timestamp"), copy = TRUE) %>%
+  left_join(L10_077_Q, by = c("date" = "Timestamp"), copy = TRUE) %>%
+  left_join(L10_077_V, by = c("date" = "Timestamp"), copy = TRUE)
+plot_1 <- ggplot(data_plot) +
+  geom_point(aes(x = date, y = Q.y, color = label), size = 2) + #color scale label_bin = 1 --> red
+  geom_point(
+    aes(x = date, y = Tw.y, color = label),
+    size = 1,
+    shape = "+"
+  ) +
+  scale_color_manual(
+    values = c("resting" = "red", "migratory" = "blue", "resident" = "green"),
+    name = "State"
+  ) +
+  facet_wrap(~tag_serial_number, scales = "free")
+plot_1

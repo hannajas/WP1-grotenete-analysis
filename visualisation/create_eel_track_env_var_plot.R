@@ -866,13 +866,13 @@ dev.off()
 ###########################################################################################################
 #Tw
 L10_077_Tw <- read_csv(
-  './data/raw/temperature/L07_077_Tw.csv',
+  './data/raw/temperature/L10_077_Tw.csv',
   show_col_types = FALSE
 ) %>%
   rename(
     date = Timestamp
   )
-pdf("./figures/2019_grotenete_migration_Tw_L07_077.pdf") # Create pdf
+pdf("./figures/2019_grotenete_migration_Tw_L10_077.pdf") # Create pdf
 for (a in 1:length(traj)) {
   if (nrow(traj[[a]]) > 1) {
     one_traj <- redisltraj(traj[a], u = 60 * 15, type = "time")
@@ -1334,3 +1334,15 @@ for (eel in names(mydfnew.split.eel)) {
   print((plots[[1]] / plots[[2]]) + plot_layout(heights = c(1, 2)))
 }
 dev.off()
+
+
+############################################################################################################
+
+plot_1 <- ggplot(data_inter_env) +
+  geom_point(aes(x = date, y = Tw, color = cluster), size = 2) + #color scale label_bin = 1 --> red
+  #   scale_color_manual(
+  #   values = c(2 = "red", 1 = "blue"),
+  #   name = "State"
+  # ) +
+  facet_wrap(~tag_serial_number, scales = "free")
+plot_1

@@ -128,7 +128,8 @@ data$downstream_migration <- ifelse(
 
 #######################################################################################################################
 #add column to devide the study area in a tidal, transition and non-tidal area
-grenswaardes_distance_to_source <- c(28833.23349, 43106.96) #boundaries between de different zones (looked at receivers distance_to_source and then ruler in QGIS)
+grenswaardes_distance_to_source <- c(33745, 49135) #boundaries between de different zones (looked at receivers distance_to_source and then ruler in QGIS)
+#before lookup table: 28833.23349, 43106.96
 data$zone <- "transition"
 data$zone[
   data$distance_to_source_m < grenswaardes_distance_to_source[1]

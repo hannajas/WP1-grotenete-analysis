@@ -1,7 +1,17 @@
-# Evaluating the calculated velocities (from cross_sections/get_velocities)
+# Evaluating the calculated velocities (from cross_sections/get_velocities) and the measured velocity
 # by Hanna Jaspaert
 # Hanna.Jaspaert@UGent.be
 
+
+# check L10_077_V
+L10_077_V <- read_csv('./data/raw/velocity/L10_077_V.csv',
+          show_col_types = FALSE)
+ggplot(L10_077_V, aes(x = Timestamp, y = Value)) +
+  geom_line() +
+  labs(title = "L10_077 V values", x = "Timestamp", y = "V values")
+write.csv(L10_077_V, './data/interim/processed/L10_077_V.csv')
+
+# after interpolation
 data_eels <- read_csv(
   './data/interim/migration_env_filter.csv',
   show_col_types = FALSE

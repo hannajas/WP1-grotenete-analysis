@@ -5,6 +5,8 @@
 library(ggplot2)
 library(patchwork)
 library(lubridate)
+library(dplyr)
+library(tidyr)
 
 # read raw data
 metadata <- read_csv('./data/raw/metadata/Metadata.csv', show_col_types = FALSE)
@@ -24,14 +26,26 @@ for (i in 1:n) {
 
 # PRE PROCESSING!!!
 # unreliable values --> NA (I did a manual screen)
-begin1 <- which(L07_077_Tw$Timestamp == ymd_hms("2019-05-03 09:00:00 UTC"))
-eind1 <- which(L07_077_Tw$Timestamp == ymd_hms("2019-05-08 09:30:00 UTC"))
-begin2 <- which(L07_077_Tw$Timestamp == ymd_hms("2019-05-19 09:30:00 UTC"))
-eind2 <- which(L07_077_Tw$Timestamp == ymd_hms("2019-05-28 12:30:00 UTC"))
-L07_077_Tw$Value[begin1:eind1] <- NA
-L07_077_Tw$Value[begin2:eind2] <- NA
-L07_077_Tw$Value <- as.numeric(L07_077_Tw$Value)
-#L07_077_Tw$Timestamp <- ymd_hms(L07_077_Tw$Timestamp)
+begin1 <- which(L10_077_Tw$Timestamp == ymd_hms("2019-05-03 09:00:00 UTC"))
+eind1 <- which(L10_077_Tw$Timestamp == ymd_hms("2019-05-08 09:30:00 UTC"))
+begin2 <- which(L10_077_Tw$Timestamp == ymd_hms("2019-05-19 09:30:00 UTC"))
+eind2 <- which(L10_077_Tw$Timestamp == ymd_hms("2019-05-28 12:30:00 UTC"))
+# insert timestamps 25-10-2019 13u00 - 29-10-2019 07u15
+time_step <- seq(
+  ymd_hms("2019-10-25 13:00:00 UTC"),
+  ymd_hms("2019-10-29 07:15:00 UTC"),
+  by = "15 min"
+)
+missing_times <- data.frame(Timestamp = time_step)
+# Join with the original data to ensure all time_step rows are present
+L10_077_Tw <- full_join(L10_077_Tw, missing_times, by = "Timestamp") %>%
+  arrange(Timestamp)
+
+
+L10_077_Tw$Value[begin1:eind1] <- NA
+L10_077_Tw$Value[begin2:eind2] <- NA
+L10_077_Tw$Value <- as.numeric(L10_077_Tw$Value)
+#L10_077_Tw$Timestamp <- ymd_hms(L10_077_Tw$Timestamp)
 #rup02e_SF_1066_Tw$Timestamp <- ymd_hms(rup02e_SF_1066_Tw$Timestamp)
 
 # remove "...2" column out of zes24a_SF_1066_Tw.csv
@@ -50,9 +64,9 @@ for (i in 1:n) {
 
 # load the processed data
 zes28a_SF_1066_Tw <- read_csv('./data/interim/processed/zes28a_SF_1066_Tw.csv')
-L07_077_Tw <- read_csv('./data/interim/processed/L07_077_Tw.csv')
+L10_077_Tw <- read_csv('./data/interim/processed/L10_077_Tw.csv')
 rup02e_SF_1066_Tw <- read_csv('./data/interim/processed/rup02e_SF_1066_Tw.csv')
-Tw <- left_join(L07_077_Tw, rup02e_SF_1066_Tw, by = "Timestamp")
+Tw <- left_join(L10_077_Tw, rup02e_SF_1066_Tw, by = "Timestamp")
 Tw <- Tw %>%
   rename(
     Grote_nete_geel = Value.x,
@@ -63,9 +77,9 @@ Tw <- Tw %>%
 g <- ggplot() +
   geom_line(
     aes(Timestamp, Value),
-    data = L07_077_Tw[
-      (L07_077_Tw$Timestamp >= "2019-12-10" &
-        L07_077_Tw$Timestamp <= "2019-12-16"),
+    data = L10_077_Tw[
+      (L10_077_Tw$Timestamp >= "2019-12-10" &
+        L10_077_Tw$Timestamp <= "2019-12-16"),
     ],
     colour = "green"
   ) +
@@ -82,13 +96,20 @@ g <- ggplot() +
 # overview of values
 Tw_long <- Tw %>%
   dplyr::select(Timestamp, Grote_nete_geel, Rupel) %>%
-  pivot_longer(cols = c(Grote_nete_geel, Rupel), names_to = "Location", values_to = "Temperature")
+  pivot_longer(
+    cols = c(Grote_nete_geel, Rupel),
+    names_to = "Location",
+    values_to = "Temperature"
+  )
 
 g <- ggplot(Tw_long, aes(x = Timestamp, y = Temperature, colour = Location)) +
   geom_line() +
-  theme(legend.position = "top",     legend.text = element_text(size = 18),      # bigger legend text
+  theme(
+    legend.position = "top",
+    legend.text = element_text(size = 18), # bigger legend text
     legend.title = element_text(size = 20),
-    axis.title = element_text(size = 18)) +#bigger legend
+    axis.title = element_text(size = 18)
+  ) + #bigger legend
   labs(colour = "Location")
 ggsave(g, file = "./figures/Temperature/Rupel_Vs_Nete.png")
 

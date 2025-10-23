@@ -54,7 +54,7 @@ for (var in variables) {
   data[[var]] <-
     inverse_distance(data, get(paste0("env_data_", var)), metadata, p, var)
 }
-#env_data_R <- concat_all_env_vars(data, "R", metadata)
+#env_data_V <- concat_all_env_vars(data, "V", metadata)
 #data$Tw <- inverse_distance(data, env_data_Tw, metadata, p, "Tw") # in deze functie nog filteren in meta data
 
 # set accumulated R right --> accumulation from release date onwards
