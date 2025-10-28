@@ -3,6 +3,7 @@ library(dplyr)
 library(lubridate)
 library(tidyquant)
 library(patchwork)
+library(sf)
 
 # Source functions
 source("./src/calculate_speed_function.R")
@@ -64,10 +65,9 @@ data <- data %>%
   group_by(tag_serial_number) %>%
   arrange(arrival, .by_group = TRUE) %>%
   mutate(
-    total_distance_m = distance_to_source_m - lag(distance_to_source_m)
+    totaldistance_m = distance_to_source_m - lag(distance_to_source_m)
   ) %>%
   ungroup()
-
 
 #######################################################################################################################
 # Calculate the alternative speed
@@ -113,18 +113,18 @@ data <- plyr::ldply(data_temp, data.frame)
 #######################################################################################################################
 # calculate 'downstream_migration'
 #######################################################################################################################
-speed_threshold <- 0.01
-data$downstream_migration <- (data$downstream == TRUE &
-  data$speed_m_s >= speed_threshold) # | (data$downstream==TRUE & !(lag(data$migration_speed) >= 30*data$migration_speed)) | (data$downstream==TRUE & !(lead(data$migration_speed) <= 30*data$migration_speed))
-data$downstream_migration[
-  data$downstream == TRUE & (lead(data$speed_m_s) * 10 <= data$speed_m_s)
-] <- FALSE
-data$downstream_migration <- ifelse(
-  (data$downstream == TRUE &
-    (lag(data$migration_speed) >= 30 * data$migration_speed)),
-  FALSE,
-  TRUE
-)
+# speed_threshold <- 0.01
+# data$downstream_migration <- (data$downstream == TRUE &
+#   data$speed_m_s >= speed_threshold) # | (data$downstream==TRUE & !(lag(data$migration_speed) >= 30*data$migration_speed)) | (data$downstream==TRUE & !(lead(data$migration_speed) <= 30*data$migration_speed))
+# data$downstream_migration[
+#   data$downstream == TRUE & (lead(data$speed_m_s) * 10 <= data$speed_m_s)
+# ] <- FALSE
+# data$downstream_migration <- ifelse(
+#   (data$downstream == TRUE &
+#     (lag(data$migration_speed) >= 30 * data$migration_speed)),
+#   FALSE,
+#   TRUE
+# )
 
 #######################################################################################################################
 #add column to devide the study area in a tidal, transition and non-tidal area
@@ -162,8 +162,8 @@ look_up <- read_csv(
   './data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv',
   show_col_types = FALSE
 )
-data$inter_segment <- add_segment(look_up, data, "interpolation_location")
-data$river_segment <- add_segment(look_up, data, "distance_to_source_m")
+data$inter_segment <- add_segments(look_up, data, "interpolation_location")
+data$river_segment <- add_segments(look_up, data, "distance_to_source_m")
 
 #######################################################################################################################
 # add coordinates to interpolation location

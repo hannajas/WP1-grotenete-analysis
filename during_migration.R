@@ -33,38 +33,59 @@ data_env <- read_csv(
 ) %>%
   group_by(tag_serial_number) #%>%
 
+
 data_env <- data_env %>%
   filter(zone == "non-tidal") %>% #| zone == "transition") %>%
   filter(
     !tag_serial_number %in%
       c(1171747, 1171751, 1294168, 1294172)
   ) %>%
+  #method PJ for onset migration
   mutate(
+    migration = lag(migration),
     label = ifelse(
-      cluster == 1,
-      "resident/resting",
-      ifelse(cluster == 2, "migratory", NA)
+      migration == FALSE,
+      "resident",
+      ifelse(migration == TRUE, "migration", NA)
     )
-  ) %>%
-  mutate(
-    first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
-    year = year(arrival[1])
   ) %>%
   mutate(
     label = case_when(
-      label == "resident/resting" &
-        row_number() < first_migratory_idx ~
-        "resident", #resident
-      label == "resident/resting" &
-        row_number() > first_migratory_idx ~
+      label == "migration" &
+        cluster == 1 ~
         "resting",
-      label == "migratory" ~ "migratory",
-      label == is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~
-        "resident"
+      label == "migration" &
+        cluster == 2 ~
+        "migratory",
+      label == "resident" ~ "resident"
     )
   ) %>%
- #filter(date >= date[first_migratory_idx] - days(1)) %>%
- #filter(label != "resident") %>%
+  # mutate(
+  #   label = ifelse(
+  #     cluster == 1,
+  #     "resident/resting",
+  #     ifelse(cluster == 2, "migratory", NA)
+  #   )
+  # ) %>%
+  # mutate(
+  #   first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
+  #   year = year(arrival[1])
+  # ) %>%
+  # mutate(
+  #   label = case_when(
+  #     label == "resident/resting" &
+  #       row_number() < first_migratory_idx ~
+  #       "resident", #resident
+  #     label == "resident/resting" &
+  #       row_number() > first_migratory_idx ~
+  #       "resting",
+  #     label == "migratory" ~ "migratory",
+  #     label == is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~
+  #       "resident"
+  #   )
+  # ) %>%
+  #filter(date >= date[first_migratory_idx] - days(1)) %>%
+  filter(label != "resident") %>%
   ungroup()
 
 # load migration circadian
@@ -85,6 +106,11 @@ data <- left_join(
   data_circadian,
   by = c("tag_serial_number", "arrival", "departure")
 )
+
+########################################################
+# General speeds
+########################################################
+#average speeds of eels (start = first migratory point, end = last detection point)
 
 ########################################################
 # GLMM Conditions during migration
@@ -221,7 +247,7 @@ L10_077_Q <- read_csv(
 
 L10_077_V <- read_csv(
   './data/interim/processed/L10_077_V.csv',
-show_col_types = FALSE
+  show_col_types = FALSE
 ) %>%
   dplyr::select(Timestamp, Value) %>%
   rename(V = Value) %>%

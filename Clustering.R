@@ -18,11 +18,17 @@ data <- read_csv(
 ##############################################################################################################
 # kmeans with raw data - each eel separately
 ##############################################################################################################
+data$cluster <- NA
+data$cluster[data$migration == FALSE] <- 1
+# data <- data %>%
+#   filter(migration == TRUE)
 mydfnew.split.eel <- split(data, data$tag_serial_number)
 
 #no visualisation
 for (i in 1:length(mydfnew.split.eel)) {
-  mydfnew.temp <- mydfnew.split.eel[[i]] %>% filter(!is.na(speed_m_s))
+  mydfnew.temp <- mydfnew.split.eel[[i]] %>%
+    filter(!is.na(speed_m_s)) %>%
+    filter(migration == TRUE)
   if (nrow(mydfnew.temp) < 2) {
     next
   }
@@ -37,8 +43,12 @@ for (i in 1:length(mydfnew.split.eel)) {
 
   # Ensure cluster column aligns with the original data
   mydfnew.split.eel[[i]]$cluster <- NA
+  # mydfnew.split.eel[[i]]$cluster[
+  #   !is.na(mydfnew.split.eel[[i]]$speed_m_s)
+  # ] <- mydfnew.temp$cluster
   mydfnew.split.eel[[i]]$cluster[
-    !is.na(mydfnew.split.eel[[i]]$speed_m_s)
+    !is.na(mydfnew.split.eel[[i]]$speed_m_s) &
+      mydfnew.split.eel[[i]]$migration == TRUE
   ] <- mydfnew.temp$cluster
 }
 data_cluster <- bind_rows(mydfnew.split.eel)

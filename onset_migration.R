@@ -62,29 +62,48 @@ data_env <- data_env %>%
     !tag_serial_number %in%
       c(1294169, 1305785, 1171747, 1171751, 1294168, 1294172)
   ) %>%
+  #method PJ for onset migration
   mutate(
     label = ifelse(
-      cluster == 1,
-      "resident/resting",
-      ifelse(cluster == 2, "migratory", NA)
+      migration == FALSE,
+      "resident",
+      ifelse(migration == TRUE, "migration", NA)
     )
-  ) %>%
-  mutate(
-    first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
-    year = year(arrival[1])
   ) %>%
   mutate(
     label = case_when(
-      label == "resident/resting" &
-        row_number() < first_migratory_idx ~
-        "resident",
-      label == "resident/resting" &
-        row_number() > first_migratory_idx ~
+      label == "migration" &
+        cluster == 1 ~
         "migration",
-      label == "migratory" ~ "migration",
-      is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~ "resident"
+      label == "migration" &
+        cluster == 2 ~
+        "migration",
+      label == "resident" ~ "resident"
     )
   ) %>%
+  # mutate(
+  #   label = ifelse(
+  #     cluster == 1,
+  #     "resident/resting",
+  #     ifelse(cluster == 2, "migratory", NA)
+  #   )
+  # ) %>%
+  # mutate(
+  #   first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
+  #   year = year(arrival[1])
+  # ) %>%
+  # mutate(
+  #   label = case_when(
+  #     label == "resident/resting" &
+  #       row_number() < first_migratory_idx ~
+  #       "resident",
+  #     label == "resident/resting" &
+  #       row_number() > first_migratory_idx ~
+  #       "migration",
+  #     label == "migratory" ~ "migration",
+  #     is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~ "resident"
+  #   )
+  # ) %>%
   ungroup()
 
 # load migration circadian
@@ -169,7 +188,7 @@ plot(p)
 # )
 
 ######################################################
-# Short-term trigger
+# Short-term trigger - INTERPOLATED DATA
 ######################################################
 #making use of conditions in interpolated telemetry dataset (its about the Q the eel experieces)
 variable <- "Q" #Tw?R?
@@ -185,7 +204,8 @@ range <- as.period(1, "days")
 for (i in 1:length(list)) {
   data_eel <- list[[i]] # neem de eerste eel
   # identificeer het eerste knikpunt (tijdstip t_k)
-  t_k <- data_eel$date[data_eel$first_migratory_idx[1]]
+  #t_k <- data_eel$date[data_eel$first_migratory_idx[1]]
+  t_k <- data_eel$date[which(data_eel$label == "migration")[1]]
   # Interpoleer de Q's naar punt x_k (Q_{inter,k})
   Q_inter_k <- data_eel[[variable]]
   deltaQ_inter_k <- data_eel[[delta_variable]]
@@ -323,10 +343,12 @@ true_scale <- TRUE
 #scale data
 data_env <- data %>%
   mutate(
-    label_bin = replace(label_bin, cluster == 1, 0), #resident = 0
-    label_bin = replace(label_bin, cluster == 2, 1), #migration = 1
+    label_bin = replace(label_bin, label == "resident", 0),
+    label_bin = replace(label_bin, label == "migration", 1),
+    # label_bin = replace(label_bin, cluster == 1, 0), #resident = 0
+    # label_bin = replace(label_bin, cluster == 2, 1), #migration = 1
     tag_serial_number = as.factor(tag_serial_number),
-    year = as.factor(year), # center V + Tw + Q + photoperiod + R
+    #year = as.factor(year), # center V + Tw + Q + photoperiod + R
     Tw = scale(Tw, scale = true_scale),
     photoperiod = scale(photoperiod, scale = true_scale),
     Q = scale(Q, scale = true_scale),
@@ -474,14 +496,15 @@ mod_tag <- glmm(
 )
 
 mod_tag <- glmer(
-  label_bin ~ Tw + (1 | tag_serial_number) + R + V,
-  data = data_balanced,
+  label_bin ~ V + (1 | tag_serial_number) + Tw + R,
+  data = data_env,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),
   nAGQ = 10,
   contrasts = list(arrival_circadian = "contr.sum")
 )
 summary(mod_tag)
+mod_tag$res
 
 ######################################################
 #check assumptions
@@ -527,6 +550,20 @@ true_class <- data_env$label_bin #data_balanced$label_bin
 # Calculate accuracy
 accuracy <- mean(pred_class == true_class)
 print(accuracy)
+
+
+##################################################################################
+#Check random effects variance (ICC)
+vc <- as.data.frame(VarCorr(mod_tag))
+# replace "tag_serial_number" with your grouping factor name
+group_var <- vc$vcov[vc$grp == "tag_serial_number"]
+latent_resid_var <- pi^2 / 3 #costanct value: Nakagawa & Schielzeth (2013, 2017)
+icc_latent <- group_var / (group_var + latent_resid_var) 
+
+
+
+
+
 
 ##################################################################################
 #Discussion
