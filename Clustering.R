@@ -19,7 +19,6 @@ data <- read_csv(
 # kmeans with raw data - each eel separately
 ##############################################################################################################
 data$cluster <- NA
-data$cluster[data$migration == FALSE] <- 1
 # data <- data %>%
 #   filter(migration == TRUE)
 mydfnew.split.eel <- split(data, data$tag_serial_number)
@@ -27,8 +26,8 @@ mydfnew.split.eel <- split(data, data$tag_serial_number)
 #no visualisation
 for (i in 1:length(mydfnew.split.eel)) {
   mydfnew.temp <- mydfnew.split.eel[[i]] %>%
-    filter(!is.na(speed_m_s)) %>%
-    filter(migration == TRUE)
+    filter(!is.na(speed_m_s)) #%>%
+  # filter(migration == TRUE)
   if (nrow(mydfnew.temp) < 2) {
     next
   }
@@ -47,9 +46,28 @@ for (i in 1:length(mydfnew.split.eel)) {
   #   !is.na(mydfnew.split.eel[[i]]$speed_m_s)
   # ] <- mydfnew.temp$cluster
   mydfnew.split.eel[[i]]$cluster[
-    !is.na(mydfnew.split.eel[[i]]$speed_m_s) &
-      mydfnew.split.eel[[i]]$migration == TRUE
+    !is.na(mydfnew.split.eel[[i]]$speed_m_s) #&
+    #mydfnew.split.eel[[i]]$migration == TRUE
   ] <- mydfnew.temp$cluster
+  mydfnew.split.eel[[i]]$cluster[
+    lag(mydfnew.split.eel[[i]]$migration) == FALSE
+  ] <- 1
+  if ((mydfnew.split.eel[[i]]$migration[1]) == TRUE) {
+    mydfnew.split.eel[[i]]$cluster[1] <- 2
+  }
+  onset_id <- which(mydfnew.split.eel[[i]]$migration == TRUE)[1] + 1
+  while (
+    !is.na(onset_id) &&
+      onset_id > 2 &&
+      mydfnew.split.eel[[i]]$cluster[onset_id] ==
+        mydfnew.split.eel[[i]]$cluster[onset_id - 1]
+  ) {
+    onset_id <- onset_id + 1
+  }
+  if (onset_id <= 2 || is.na(onset_id)) {
+    next
+  }
+  mydfnew.split.eel[[i]]$cluster[onset_id] <- 2
 }
 data_cluster <- bind_rows(mydfnew.split.eel)
 #save as csv

@@ -64,3 +64,12 @@ for (i in 2:length(seq_af) - 1) {
   }
 }
 dev.off()
+
+########################################################################
+while (
+  !is.na(onset_id) &&
+    mydfnew.split.eel[[1]]$cluster[onset_id] ==
+      mydfnew.split.eel[[1]]$cluster[onset_id + 1]
+) {
+  onset_id <- onset_id + 1
+}

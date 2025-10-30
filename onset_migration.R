@@ -55,55 +55,68 @@ data_env <- read_csv(
 #datapunt volledig weg (dit is veel meer dan 1 dag dat je wegsmeet!!)
 
 #als dat a temp een kolom data bevat
-
+no_detections <- c(1171747, 1171751, 1294168, 1294172)
+no_onset <- c(
+  1294169,
+  1305785,
+  1293822,
+  1294165,
+  1294167,
+  1294170,
+  1294189,
+  1294191,
+  1305786,
+  1305788,
+  1305791
+) #1305791 never migratory, rest never resident
 data_env <- data_env %>%
   filter(zone == "non-tidal") %>% #| zone == "transition") %>%
   filter(
     !tag_serial_number %in%
-      c(1294169, 1305785, 1171747, 1171751, 1294168, 1294172)
+      c(no_onset, no_detections)
   ) %>%
   #method PJ for onset migration
-  mutate(
-    label = ifelse(
-      migration == FALSE,
-      "resident",
-      ifelse(migration == TRUE, "migration", NA)
-    )
-  ) %>%
-  mutate(
-    label = case_when(
-      label == "migration" &
-        cluster == 1 ~
-        "migration",
-      label == "migration" &
-        cluster == 2 ~
-        "migration",
-      label == "resident" ~ "resident"
-    )
-  ) %>%
   # mutate(
   #   label = ifelse(
-  #     cluster == 1,
-  #     "resident/resting",
-  #     ifelse(cluster == 2, "migratory", NA)
+  #     migration == FALSE,
+  #     "resident",
+  #     ifelse(migration == TRUE, "migration", NA)
   #   )
-  # ) %>%
-  # mutate(
-  #   first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
-  #   year = year(arrival[1])
   # ) %>%
   # mutate(
   #   label = case_when(
-  #     label == "resident/resting" &
-  #       row_number() < first_migratory_idx ~
-  #       "resident",
-  #     label == "resident/resting" &
-  #       row_number() > first_migratory_idx ~
+  #     label == "migration" &
+  #       cluster == 1 ~
   #       "migration",
-  #     label == "migratory" ~ "migration",
-  #     is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~ "resident"
+  #     label == "migration" &
+  #       cluster == 2 ~
+  #       "migration",
+  #     label == "resident" ~ "resident"
   #   )
   # ) %>%
+  mutate(
+    label = ifelse(
+      cluster == 1,
+      "resident/resting",
+      ifelse(cluster == 2, "migratory", NA)
+    )
+  ) %>%
+  mutate(
+    first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
+    year = year(arrival[1])
+  ) %>%
+  mutate(
+    label = case_when(
+      label == "resident/resting" &
+        row_number() < first_migratory_idx ~
+        "resident",
+      label == "resident/resting" &
+        row_number() > first_migratory_idx ~
+        "migration",
+      label == "migratory" ~ "migration",
+      is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~ "resident"
+    )
+  ) %>%
   ungroup()
 
 # load migration circadian
@@ -138,9 +151,9 @@ variables <- c(
   #"turb",
   #"O",
   "V",
-  "photoperiod"
+  "photoperiod",
   #"speed_m_s",
-  #"R",
+  "R"
   #"delta_R"
 ) #OR some individually: bv. "Q"
 
@@ -154,7 +167,7 @@ data_env_long <- data_env %>%
   mutate(
     variable = factor(
       variable,
-      levels = c("speed_m_s", "photoperiod", "Tw", "Q", "V")
+      levels = variables
     )
   )
 y_labels <- c(
@@ -162,7 +175,8 @@ y_labels <- c(
   photoperiod = "Photoperiod (min)",
   Tw = "Temperature (°C)",
   Q = "Discharge (m³/s)",
-  V = "Velocity (m/s)"
+  V = "Velocity (m/s)",
+  R = "Rainfall (mm)"
 )
 p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose the colors
   #scale_fill_manual(values = c("all" = "blue", "first_resident" = "red"), alpha = 0.5) +
@@ -182,9 +196,9 @@ p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose th
   windows(width = 16, height = 5)
 plot(p)
 # ggsave(
-#   "./figures/Clustering/boxplot_labelled_non_tidal_inter.png",
+#   "./figures/Clustering/boxplot_labelled_non_tidal.png",
 #   height = 7,
-#   width = 20
+#   width = 22
 # )
 
 ######################################################
@@ -256,7 +270,7 @@ g <- ggplot(data = dataplot) +
   labs(y = "Discharge (m³/s)", x = "Eel ID")
 plot(g)
 # ggsave(
-#   "./figures/onset_of_migration/as_trigger/Q_rangemmax_1day_delday1.png",
+#   "./figures/onset_of_migration/as_trigger/V_rangemmax_1day_delday1.png",
 #   plot = g,
 # )
 
@@ -327,7 +341,7 @@ ggsave(
 #gaan we er nietvanuit (expert knoledge dat er )
 ############################################################################################################
 library(glmm)
-set.seed(1235)
+set.seed(1234)
 
 ######################################################
 #Prepare data
@@ -496,12 +510,12 @@ mod_tag <- glmm(
 )
 
 mod_tag <- glmer(
-  label_bin ~ V + (1 | tag_serial_number) + Tw + R,
+  label_bin ~ V + (1 | tag_serial_number) + R + Tw,
   data = data_env,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),
   nAGQ = 10,
-  contrasts = list(arrival_circadian = "contr.sum")
+  contrasts = list(departure_circadian = "contr.sum")
 )
 summary(mod_tag)
 mod_tag$res
@@ -558,11 +572,7 @@ vc <- as.data.frame(VarCorr(mod_tag))
 # replace "tag_serial_number" with your grouping factor name
 group_var <- vc$vcov[vc$grp == "tag_serial_number"]
 latent_resid_var <- pi^2 / 3 #costanct value: Nakagawa & Schielzeth (2013, 2017)
-icc_latent <- group_var / (group_var + latent_resid_var) 
-
-
-
-
+icc_latent <- group_var / (group_var + latent_resid_var)
 
 
 ##################################################################################
@@ -721,7 +731,7 @@ data_plot <- data_env %>%
   left_join(L10_077_V, by = c("date" = "Timestamp"), copy = TRUE)
 
 mod_tag <- glmer(
-  label_bin ~ (1 | tag_serial_number) + V.y + Tw.y + R + Q.y,
+  label_bin ~ (1 | tag_serial_number) + Q.y, # + R + Tw.y,# + Tw.y + R + arrival_circadian,
   data = data_plot,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),
@@ -729,3 +739,6 @@ mod_tag <- glmer(
   contrasts = list(arrival_circadian = "contr.sum")
 )
 summary(mod_tag)
+
+ggplot(data_env) +
+  geom_point(aes(x = V, y = photoperiod))

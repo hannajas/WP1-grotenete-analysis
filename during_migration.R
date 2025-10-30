@@ -110,7 +110,6 @@ data <- left_join(
 ########################################################
 # General speeds
 ########################################################
-#average speeds of eels (start = first migratory point, end = last detection point)
 
 ########################################################
 # GLMM Conditions during migration
@@ -170,7 +169,7 @@ ggplot(data_env, aes(x = delta_Q, y = delta_Tw, color = label_bin)) +
 ######################################################
 # Built model
 mod_tag <- glmer(
-  label_bin ~ (1 | tag_serial_number) + Q + R + photoperiod + Tw, #arrival_circadian + photoperiod + Q + Tw
+  label_bin ~ (1 | tag_serial_number) + Q + R + Tw + photoperiod, #arrival_circadian + photoperiod + Q + Tw
   data = data_env,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),
@@ -181,7 +180,7 @@ summary(mod_tag)
 
 
 mod_tag <- glmer(
-  speed_m_s ~ (1 | tag_serial_number) + Q + R + photoperiod + Tw, #arrival_circadian + photoperiod + Q + Tw
+  speed_m_s ~ (1 | tag_serial_number) + Q + R + Tw + photoperiod, #arrival_circadian + photoperiod + Q + Tw
   data = data_env,
   family = gaussian,
   #control = glmerControl(optimizer = "bobyqa"),

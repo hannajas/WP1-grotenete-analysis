@@ -131,3 +131,28 @@ ggplot(Tw, aes(x = Rupel)) +
 # --> temperature is not independent (time dependent) AND not normally distributed!
 
 cor.test(Tw$Grote_nete_geel, Tw$Rupel, use = "complete.obs") #houdt geen steek want er wordt niet aan de assumpties voldaan
+
+
+###################################################################################################################
+# CALCULATE ANOMALIE OF THE CLIMATOLOGY
+# https://www.r-bloggers.com/2020/03/visualize-climate-anomalies/
+# 1. climatology
+ts_id <- c(39305042, 103542010, 45540010, 110824010, 51824010)
+name <- c(
+  "L10_077",
+  "rup02e_SF_1066",
+  "zes24a_SF_1066",
+  "zes09x_SF_1066",
+  "zes01a_SF_1066"
+)
+source <- c(1, 4, 4, 4, 4)
+for (i in 1:length(ts_id)) {
+  Tw <- get_timeseries_tsid(
+    ts_id[i],
+    from = "2000-01-01",
+    to = "2025-01-01",
+    datasource = 4
+  )
+  path <- paste('./data/anomaly/', name[i], '_Tw.csv', sep = "")
+  write.csv(Tw, path)
+}
