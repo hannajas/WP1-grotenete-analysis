@@ -269,10 +269,10 @@ g <- ggplot(data = dataplot) +
   theme(axis.text.x = element_blank()) +
   labs(y = "Discharge (m³/s)", x = "Eel ID")
 plot(g)
-# ggsave(
-#   "./figures/onset_of_migration/as_trigger/V_rangemmax_1day_delday1.png",
-#   plot = g,
-# )
+ggsave(
+  "./figures/onset_of_migration/as_trigger/Q_rangemmax_1day_delday1_new.png",
+  plot = g,
+)
 
 #plot Q_trigger
 # p <- ggplot() +
@@ -364,10 +364,13 @@ data_env <- data %>%
     tag_serial_number = as.factor(tag_serial_number),
     #year = as.factor(year), # center V + Tw + Q + photoperiod + R
     Tw = scale(Tw, scale = true_scale),
+    Tw_an = scale(Tw_an, scale = true_scale),
     photoperiod = scale(photoperiod, scale = true_scale),
     Q = scale(Q, scale = true_scale),
+    Q_an = scale(Q_an, scale = true_scale),
     V = scale(V, scale = true_scale),
-    R = scale(R, scale = true_scale)
+    R = scale(R, scale = true_scale),
+    distance_to_source_m = scale(distance_to_source_m, scale = true_scale)
   ) %>%
   filter(!is.na(label_bin))
 
@@ -510,7 +513,7 @@ mod_tag <- glmm(
 )
 
 mod_tag <- glmer(
-  label_bin ~ V + (1 | tag_serial_number) + R + Tw,
+  label_bin ~ Q + (1 | tag_serial_number) + R + Tw_an + photoperiod,
   data = data_env,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),

@@ -47,42 +47,38 @@ for (i in 1:n) {
 ###########################################################################################################
 #add two columns to the data_eels dataframe: tide_arrival, tide_departure
 ###########################################################################################################
-
-data_filter <- read_csv(
-  './data/interim/migration_env_filter.csv',
-  show_col_types = FALSE
-) %>%
-  group_by(tag_serial_number) %>%
-  filter(
-    !tag_serial_number %in%
-      c(1294169, 1305785, 1171747, 1171751, 1294168, 1294172)
-  ) %>%
-  mutate(
-    label = ifelse(
-      cluster == 1,
-      "resident/resting",
-      ifelse(cluster == 2, "migratory", NA)
-    ) ) %>%
-  mutate(
-    first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
-    year = year(arrival[1])
-  ) %>%
-  mutate(
-    label = case_when(
-      label == "resident/resting" &
-        row_number() < first_migratory_idx ~
-        "resident",
-      label == "resident/resting" &
-        row_number() > first_migratory_idx ~
-        "resting",
-      label == "migratory" ~ "migratory",
-      is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~ "resident"
-    )
-  ) %>%
-  ungroup()
-
-
-
+# data_filter <- read_csv(
+#   './data/interim/migration_env_filter.csv',
+#   show_col_types = FALSE
+# ) %>%
+#   group_by(tag_serial_number) %>%
+#   filter(
+#     !tag_serial_number %in%
+#       c(1294169, 1305785, 1171747, 1171751, 1294168, 1294172)
+#   ) %>%
+#   mutate(
+#     label = ifelse(
+#       cluster == 1,
+#       "resident/resting",
+#       ifelse(cluster == 2, "migratory", NA)
+#     ) ) %>%
+#   mutate(
+#     first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
+#     year = year(arrival[1])
+#   ) %>%
+#   mutate(
+#     label = case_when(
+#       label == "resident/resting" &
+#         row_number() < first_migratory_idx ~
+#         "resident",
+#       label == "resident/resting" &
+#         row_number() > first_migratory_idx ~
+#         "resting",
+#       label == "migratory" ~ "migratory",
+#       is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~ "resident"
+#     )
+#   ) %>%
+#   ungroup()
 
 data_filter_tij <- data_filter %>%
   mutate(
@@ -95,11 +91,12 @@ data_filter_tij <- data_filter %>%
   ) %>%
   filter(zone == "tidal")
 
-#lookup table
+#all tide data in a list
 concat_tij <- lapply(
   metadata_tij$name,
   function(x) get(paste(x, '_tij', sep = ""))
 )
+#proportions for statistics
 Proportion <- bind_rows(concat_tij) %>%
   group_by(name, tij) %>%
   summarise(
@@ -117,9 +114,30 @@ Proportion <- bind_rows(concat_tij) %>%
 
 for (i in 1:nrow(data_filter_tij)) {
   # choose the right tidal data
-  ind <- which.min(abs(
-    data_filter_tij$distance_to_source_m[i] - metadata_tij$distance_to_source
+  diffs <- data_filter_tij$distance_to_source_m[i] -
+    metadata_tij$distance_to_source
+  diffs_refect <- -(abs(metadata_tij$distance_to_source - dist_split) +
+    abs(dist_split - data_filter_tij$distance_to_source_m[i]))
+  if (data_filter_tij$inter_segment[i] == "zes_up") {
+    diffs[metadata_tij$segment == "zes_down"] <- diffs_refect[
+      metadata_tij$segment == "zes_down"
+    ]
+  } else if (data_filter_tij$inter_segment[i] == "zes_down") {
+    diffs[metadata_tij$segment == "zes_up"] <- diffs_refect[
+      metadata_tij$segment == "zes_up"
+    ]
+  }
+  upstream_idx <- if (any(diffs < 0)) which.max(diffs[diffs < 0]) else NA
+  downstream_idx <- if (any(diffs > 0)) which.min(diffs[diffs > 0]) else NA
+
+  selected_idx <- na.omit(c(
+    if (!is.na(upstream_idx)) which(diffs == max(diffs[diffs < 0]))[1],
+    if (!is.na(downstream_idx)) which(diffs == min(diffs[diffs > 0]))[1], #of NA for upstream_idx or downstream_idx is NA --> choose closest environmental station
+    if (is.na(upstream_idx) | is.na(downstream_idx)) which.min(abs(diffs)) #if no upstream or downstream station, choose closest station
   ))
+  # ind <- which.min(abs(
+  #   data_filter_tij$distance_to_source_m[i] - metadata_tij$distance_to_source
+  # ))
   closest <- get(paste(metadata_tij$name[ind], '_tij', sep = "")) #interval as interval
   #closest$interval <- list(closest$interval)
   #inverse dinstance rekenen met de tijdstippen van de tijdata

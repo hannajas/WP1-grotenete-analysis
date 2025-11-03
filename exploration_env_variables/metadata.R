@@ -11,6 +11,8 @@ library(sf)
 # source function
 source("./src/add_segments_function.R")
 
+#Load data
+data <- read_csv('./data/raw/migration.csv', show_col_types = FALSE)
 # Load metadata
 metadata <- read_csv('./data/raw/metadata/Metadata.csv', show_col_types = FALSE)
 n_data <- dim(metadata)[1] #number of variables

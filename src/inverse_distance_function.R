@@ -5,7 +5,7 @@ inverse_distance <- function(
   p,
   data_type
 ) {
-  metadata_filter <- filter(metadata, metadata$type == data_type)
+  metadata_filter <- filter(metadata, stringr::str_detect(metadata$type, data_type))
 
   n <- dim(metadata_filter)[1]
   V <- as.matrix(env_data)
@@ -62,7 +62,7 @@ inverse_distance <- function(
   # dealing with the nan values in temperature values
   W[nan_V] <- 0
 
-  if (data_type == "Q" | data_type == "V") {
+  if (data_type == "Q" | data_type == "V"| data_type == "Q_an") {
     #enkel gewicht als binnen zelfde rivier segment
     ind_row_gn <- which(telemetry_data$inter_segment == "gn")
     ind_col_gn <- which(metadata_filter$segment != "gn")

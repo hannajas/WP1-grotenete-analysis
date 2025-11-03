@@ -34,7 +34,7 @@ dist_split <- lookup %>%
 ##############################################################################
 # Link environmental data with RAW telemetry data
 ##############################################################################
-variables <- c("Tw", "Q", "photoperiod", "R", "S", "turb", "O", "V")
+variables <- c("Tw","Tw_an","Q","Q_an", "photoperiod", "R", "S", "turb", "O", "V")#maken zodat Q en Tw er ook bijkunnen
 p <- 1
 for (var in variables) {
   temp <- concat_all_env_vars(data, var, metadata) # averaging the environmental variables to fit telemetry data
@@ -43,9 +43,9 @@ for (var in variables) {
     data[[var]] <- env_data_photoperiod$photoperiod
     next
   }
-  if (var == "Q") {
-    env_data_Q_norm <- env_data_Q #/ colMeans(env_data_Q, na.rm = TRUE)
-    data$Q <- inverse_distance(data, env_data_Q_norm, metadata, p, "Q") # INVERSE DISTANCE WEIGHTING
+  if (var == "Q_an"|var == "Q") {
+    env_data_Q_norm <- scale(get(paste0("env_data_", var)), center = TRUE, scale = FALSE) #JE KAN SCALE OOK WEGHALEN
+    data[[var]] <- inverse_distance(data, env_data_Q_norm, metadata, p, var) # INVERSE DISTANCE WEIGHTING
     next
   }
   # if (var == "R") {
@@ -54,7 +54,7 @@ for (var in variables) {
   data[[var]] <-
     inverse_distance(data, get(paste0("env_data_", var)), metadata, p, var)
 }
-#env_data_V <- concat_all_env_vars(data, "V", metadata)
+#env_data_Q <- concat_all_env_vars(data, "Q", metadata)
 #data$Tw <- inverse_distance(data, env_data_Tw, metadata, p, "Tw") # in deze functie nog filteren in meta data
 
 # set accumulated R right --> accumulation from release date onwards

@@ -7,6 +7,8 @@ library(patchwork)
 library(lubridate)
 library(dplyr)
 library(tidyr)
+library(tidyverse)
+
 
 # read raw data
 metadata <- read_csv('./data/raw/metadata/Metadata.csv', show_col_types = FALSE)
@@ -30,6 +32,8 @@ begin1 <- which(L10_077_Tw$Timestamp == ymd_hms("2019-05-03 09:00:00 UTC"))
 eind1 <- which(L10_077_Tw$Timestamp == ymd_hms("2019-05-08 09:30:00 UTC"))
 begin2 <- which(L10_077_Tw$Timestamp == ymd_hms("2019-05-19 09:30:00 UTC"))
 eind2 <- which(L10_077_Tw$Timestamp == ymd_hms("2019-05-28 12:30:00 UTC"))
+begin3 <- which(L10_077_Tw$Timestamp == ymd_hms("2019-05-14 07:30:00 UTC"))
+eind3 <- which(L10_077_Tw$Timestamp == ymd_hms("2019-05-14 07:45:00 UTC"))
 # insert timestamps 25-10-2019 13u00 - 29-10-2019 07u15
 time_step <- seq(
   ymd_hms("2019-10-25 13:00:00 UTC"),
@@ -44,6 +48,7 @@ L10_077_Tw <- full_join(L10_077_Tw, missing_times, by = "Timestamp") %>%
 
 L10_077_Tw$Value[begin1:eind1] <- NA
 L10_077_Tw$Value[begin2:eind2] <- NA
+L10_077_Tw$Value[begin3:eind3] <- NA
 L10_077_Tw$Value <- as.numeric(L10_077_Tw$Value)
 #L10_077_Tw$Timestamp <- ymd_hms(L10_077_Tw$Timestamp)
 #rup02e_SF_1066_Tw$Timestamp <- ymd_hms(rup02e_SF_1066_Tw$Timestamp)
@@ -137,22 +142,82 @@ cor.test(Tw$Grote_nete_geel, Tw$Rupel, use = "complete.obs") #houdt geen steek w
 # CALCULATE ANOMALIE OF THE CLIMATOLOGY
 # https://www.r-bloggers.com/2020/03/visualize-climate-anomalies/
 # 1. climatology
-ts_id <- c(39305042, 103542010, 45540010, 110824010, 51824010)
+library(wateRinfo)
+#chat GPT
+# Define measurement points
+ts_id <- c("39305042", 103542010, 45540010, 110824010, 51824010, 45540010, 49109010)
 name <- c(
   "L10_077",
   "rup02e_SF_1066",
   "zes24a_SF_1066",
   "zes09x_SF_1066",
-  "zes01a_SF_1066"
+  "zes01a_SF_1066",
+  "zes28a_SF_1066",
+  "zes19a_SF_B_1066"
 )
-source <- c(1, 4, 4, 4, 4)
-for (i in 1:length(ts_id)) {
-  Tw <- get_timeseries_tsid(
+source_d <- c(1, 4, 4, 4, 4, 4, 4)
+res <- c(15, 5, 10, 5, 10, 10, 5) #resolution in minutes
+source("./src/get_anomaly_functions.R")
+###############################################################################################
+# Periods
+climatology_start <- 2005
+climatology_end <- 2025
+anomaly_start <- as_datetime("2019-01-01 00:00:00", tz = "UTC")
+anomaly_end <- as_datetime("2021-02-28 23:59:59", tz = "UTC")
+# ---- Main loop ----
+for (i in seq_along(ts_id)) {
+  message("Processing station: ", name[i])
+
+  # 1️⃣ Download full record
+  Tw_full <- get_timeseries_chunked(
     ts_id[i],
-    from = "2000-01-01",
-    to = "2025-01-01",
-    datasource = 4
+    datasource = source_d[i],
+    start_year = climatology_start,
+    end_year = climatology_end,
+    chunk_size = 1
   )
-  path <- paste('./data/anomaly/', name[i], '_Tw.csv', sep = "")
-  write.csv(Tw, path)
+
+  if (nrow(Tw_full) == 0) {
+    message("⚠️ No data for ", name[i])
+    next
+  }
+
+  # 2️⃣ Compute anomalies only for 2019–2021
+  Tw_an <- calc_anomaly(Tw_full, anomaly_start, anomaly_end, res[i])# of climatology moet je nog een rollmean toepassen!
+
+  write_csv(Tw_an, paste0("./data/interim/processed/", name[i], "_Tw_an.csv"))
 }
+
+
+#test climatology
+dat_prep <- Tw_full %>%
+  mutate(doy = yday(Timestamp),
+         year = year(Timestamp))
+roll_mean <- rollmean(dat_prep$Value, 7*24*4, align = "center", fill = NA)
+  
+climatology <- dat_prep %>%  mutate(rollmean = roll_mean) %>%
+  group_by(doy) %>%
+  summarize(climatology = mean(rollmean, na.rm = TRUE), .groups = "drop")
+
+ggplot(aes(x = doy, y = climatology), data = climatology) +
+  geom_line() +
+  labs(title = "Climatology with rolling mean (7 days)") +
+  xlab("Day of Year") +
+  ylab("Climatology Value") +
+  theme_minimal()
+
+
+
+
+# Plot
+p <- ggplot(Tw_an) +
+  geom_line(aes(x = Timestamp, y = anomaly), color = "steelblue") +
+  ggtitle(paste("Temperature anomaly (2019–2021) -", name[i])) +
+  theme_minimal()
+
+test <- get_timeseries_tsid(
+  45540010,
+  from = "2015-08-01",
+  to = "2015-12-31",
+  datasource = 4
+)
