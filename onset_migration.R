@@ -45,7 +45,7 @@ metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 #   filter(date > date[[1]] + days(1))
 
 #raw
-data_env <- read_csv(
+data_raw <- read_csv(
   './data/interim/migration_env_filter.csv',
   show_col_types = FALSE
 ) %>%
@@ -69,7 +69,7 @@ no_onset <- c(
   1305788,
   1305791
 ) #1305791 never migratory, rest never resident
-data_env <- data_env %>%
+data_env <- data_raw %>%
   filter(zone == "non-tidal") %>% #| zone == "transition") %>%
   filter(
     !tag_serial_number %in%
@@ -103,7 +103,9 @@ data_env <- data_env %>%
   ) %>%
   mutate(
     first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
-    year = year(arrival[1])
+    year = year(arrival[1]),
+    month = month(arrival[1]),
+    month_onset = month(arrival[first_migratory_idx[1]]),
   ) %>%
   mutate(
     label = case_when(
@@ -144,8 +146,10 @@ data <- left_join(
 variables <- c(
   "speed_m_s",
   "Q",
+  "Q_an",
   #"delta_Q",#DELTA zegt niets bij raw data (delta over versch tijdspannes)
   "Tw",
+  "Tw_an",
   #"delta_Tw",
   #"S",aan als tidal data ook in rekening
   #"turb",
@@ -174,7 +178,9 @@ y_labels <- c(
   speed_m_s = "Eel speed (m/s)",
   photoperiod = "Photoperiod (min)",
   Tw = "Temperature (°C)",
+  Tw_an = "Temperature anomaly (°C)",
   Q = "Discharge (m³/s)",
+  Q_an = "Discharge anomaly (m³/s)",
   V = "Velocity (m/s)",
   R = "Rainfall (mm)"
 )
@@ -362,7 +368,8 @@ data_env <- data %>%
     # label_bin = replace(label_bin, cluster == 1, 0), #resident = 0
     # label_bin = replace(label_bin, cluster == 2, 1), #migration = 1
     tag_serial_number = as.factor(tag_serial_number),
-    #year = as.factor(year), # center V + Tw + Q + photoperiod + R
+    year = as.factor(year), # center V + Tw + Q + photoperiod + R
+    month = as.factor(month),
     Tw = scale(Tw, scale = true_scale),
     Tw_an = scale(Tw_an, scale = true_scale),
     photoperiod = scale(photoperiod, scale = true_scale),
@@ -390,14 +397,14 @@ palette <- c("resident" = "blue", "migration" = "red")
 col_vec <- palette[as.character(cols)]
 
 pairs(
-  data_env %>% dplyr::select(Tw, Q, V, photoperiod, R),
+  data_env %>% dplyr::select(Tw_an, Q_an, photoperiod, R),
   col = adjustcolor(col_vec, alpha.f = 0.5),
   pch = 22
 )
 
 #correlation matrix
 cor_mat <- data_env %>%
-  dplyr::select(Tw, Q, V, photoperiod, R) %>%
+  dplyr::select(Tw_an, Q_an, photoperiod, R) %>%
   cor(use = "pairwise.complete.obs")
 
 ggplot(data_env, aes(x = V, y = Tw, color = label)) +
@@ -492,10 +499,11 @@ cor_mat <- data_balanced %>%
 
 #glm
 first_mod_glm <- glm(
-  label_bin ~ Tw + arrival_circadian + V + R,
+  label_bin ~ Tw_an + Q_an + R + photoperiod,
   data = data_env,
-  family = binomial
+  family = binomial(link="cloglog")
 )
+summary(first_mod_glm)
 
 #glmm
 mc_size <- 10^5
@@ -513,12 +521,12 @@ mod_tag <- glmm(
 )
 
 mod_tag <- glmer(
-  label_bin ~ Q + (1 | tag_serial_number) + R + Tw_an + photoperiod,
+  label_bin ~ Q_an + R + Tw_an + photoperiod + (1 | tag_serial_number),
   data = data_env,
-  family = binomial,
+  family = binomial(link="cloglog"),
   control = glmerControl(optimizer = "bobyqa"),
-  nAGQ = 10,
-  contrasts = list(departure_circadian = "contr.sum")
+  nAGQ = 100,
+  #contrasts = list(departure_circadian = "contr.sum")
 )
 summary(mod_tag)
 mod_tag$res
@@ -745,3 +753,7 @@ summary(mod_tag)
 
 ggplot(data_env) +
   geom_point(aes(x = V, y = photoperiod))
+
+
+
+######################################################################

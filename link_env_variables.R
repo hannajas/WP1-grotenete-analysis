@@ -44,7 +44,7 @@ for (var in variables) {
     next
   }
   if (var == "Q_an"|var == "Q") {
-    env_data_Q_norm <- scale(get(paste0("env_data_", var)), center = TRUE, scale = FALSE) #JE KAN SCALE OOK WEGHALEN
+    env_data_Q_norm <- scale(get(paste0("env_data_", var)), center = TRUE, scale = TRUE) #JE KAN SCALE OOK WEGHALEN
     data[[var]] <- inverse_distance(data, env_data_Q_norm, metadata, p, var) # INVERSE DISTANCE WEIGHTING
     next
   }

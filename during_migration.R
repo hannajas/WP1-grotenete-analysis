@@ -131,9 +131,11 @@ data_env <- data %>%
       labels = c("migratory", "resting")
     ),
     tag_serial_number = as.factor(tag_serial_number),
-    Tw = scale(Tw_an, scale = true_scale),
+    Tw_an = scale(Tw_an, scale = true_scale),
+    Tw = scale(Tw, scale = true_scale),
     photoperiod = scale(photoperiod, scale = true_scale),
-    Q = scale(Q_an, scale = true_scale),
+    Q_an = scale(Q_an, scale = true_scale),
+    Q = scale(Q, scale = true_scale),
     deltaQ = scale(delta_Q, scale = true_scale),
     delta_Tw = scale(delta_Tw, scale = true_scale),
     delta_R = scale(delta_R, scale = true_scale),
@@ -169,11 +171,11 @@ ggplot(data_env, aes(x = delta_Q, y = delta_Tw, color = label_bin)) +
 ######################################################
 # Built model
 mod_tag <- glmer(
-  label_bin ~ (1 | tag_serial_number) + Q_an + R + Tw_an + photoperiod, #arrival_circadian + photoperiod + Q + Tw
+  label_bin ~ (1 | tag_serial_number) + photoperiod + Tw + R + Q, # arrival_circadian
   data = data_env,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),
-  #nAGQ = 10,
+  nAGQ = 10,
   contrasts = list(arrival_circadian = "contr.sum")
 )
 summary(mod_tag)
