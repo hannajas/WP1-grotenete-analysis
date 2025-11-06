@@ -12,11 +12,16 @@ library(patchwork)
 #Tij data:
 #niet BS-RUP-1096, rest wel
 
-# read metadata and tide data
+# read (meta)data and tide data
+data_filter <- read_csv(
+  './data/interim/migration_filter.csv',
+  show_col_types = FALSE
+)
 metadata <- read_csv('./data/raw/metadata/Metadata.csv', show_col_types = FALSE)
 metadata_tij <- filter(metadata, metadata$type == "tij")
 n <- dim(metadata_tij)[1]
 
+# add tij and interval columns
 for (i in 1:n) {
   path <- paste('./data/raw/tide/', metadata_tij$name[i], '_tij.csv', sep = "")
   temp <- read_csv(path)
@@ -44,41 +49,10 @@ for (i in 1:n) {
 #   write.csv(get(paste(metadata_tij$name[i], '_tij', sep = "")), path)
 # }
 
-###########################################################################################################
-#add two columns to the data_eels dataframe: tide_arrival, tide_departure
-###########################################################################################################
-# data_filter <- read_csv(
-#   './data/interim/migration_env_filter.csv',
-#   show_col_types = FALSE
-# ) %>%
-#   group_by(tag_serial_number) %>%
-#   filter(
-#     !tag_serial_number %in%
-#       c(1294169, 1305785, 1171747, 1171751, 1294168, 1294172)
-#   ) %>%
-#   mutate(
-#     label = ifelse(
-#       cluster == 1,
-#       "resident/resting",
-#       ifelse(cluster == 2, "migratory", NA)
-#     ) ) %>%
-#   mutate(
-#     first_migratory_idx = min(which(label == "migratory"), na.rm = TRUE),
-#     year = year(arrival[1])
-#   ) %>%
-#   mutate(
-#     label = case_when(
-#       label == "resident/resting" &
-#         row_number() < first_migratory_idx ~
-#         "resident",
-#       label == "resident/resting" &
-#         row_number() > first_migratory_idx ~
-#         "resting",
-#       label == "migratory" ~ "migratory",
-#       is.infinite(first_migratory_idx) | is.na(first_migratory_idx) ~ "resident"
-#     )
-#   ) %>%
-#   ungroup()
+#########################################################################
+# arrival departure analysis
+#########################################################################
+p <- 1
 
 data_filter_tij <- data_filter %>%
   mutate(
@@ -112,70 +86,73 @@ Proportion <- bind_rows(concat_tij) %>%
     ebb_p = ebb / (flood + ebb)
   )
 
+
 for (i in 1:nrow(data_filter_tij)) {
   # choose the right tidal data
-  diffs <- data_filter_tij$distance_to_source_m[i] -
-    metadata_tij$distance_to_source
-  diffs_refect <- -(abs(metadata_tij$distance_to_source - dist_split) +
-    abs(dist_split - data_filter_tij$distance_to_source_m[i]))
-  if (data_filter_tij$inter_segment[i] == "zes_up") {
-    diffs[metadata_tij$segment == "zes_down"] <- diffs_refect[
-      metadata_tij$segment == "zes_down"
+  idw_weights <- get_idx_weights(
+    data_filter_tij[i, ],
+    metadata_tij,
+    dist_split
+  )
+  w <- idw_weights[[2]]
+  selected_idx <- idw_weights[[1]]
+  #get your weighted tide
+  weighted <- get_weighted_tide(selected_idx, w, metadata_tij)
+
+  #inverse dinstance rekenen met de tijdstippen van de tijdata
+  ind_arr <- which(data_filter_tij$arrival[i] %within% weighted$interval)
+  ind_dep <- which(data_filter_tij$departure[i] %within% weighted$interval)
+  data_filter_tij$tidetime_arr[i] <- weighted$Timestamp[ind_arr]
+  data_filter_tij$tidetime_dep[i] <- weighted$Timestamp[ind_dep]
+
+  #Calculate proportions flood/ebb
+  if (length(selected_idx) == 2) {
+    ebb_1 <- Proportion$ebb_p[
+      Proportion$name == metadata_tij$name[selected_idx[1]]
     ]
-  } else if (data_filter_tij$inter_segment[i] == "zes_down") {
-    diffs[metadata_tij$segment == "zes_up"] <- diffs_refect[
-      metadata_tij$segment == "zes_up"
+    ebb_2 <- Proportion$ebb_p[
+      Proportion$name == metadata_tij$name[selected_idx[2]]
+    ]
+    flood_1 <- Proportion$flood_p[
+      Proportion$name == metadata_tij$name[selected_idx[1]]
+    ]
+    flood_2 <- Proportion$flood_p[
+      Proportion$name == metadata_tij$name[selected_idx[2]]
+    ]
+    data_filter_tij$ebb_w[i] <- (ebb_1 *
+      w[selected_idx[1]] +
+      ebb_2 * w[selected_idx[2]]) /
+      (sum(w[selected_idx]))
+
+    data_filter_tij$flood_w[i] <- (flood_1 *
+      w[selected_idx[1]] +
+      flood_2 * w[selected_idx[2]]) /
+      (sum(w[selected_idx]))
+  } else {
+    ind <- selected_idx
+    data_filter_tij$ebb_w[i] <- Proportion$ebb_p[
+      Proportion$name == metadata_tij$name[ind]
+    ]
+    data_filter_tij$flood_w[i] <- Proportion$flood_p[
+      Proportion$name == metadata_tij$name[ind]
     ]
   }
-  upstream_idx <- if (any(diffs < 0)) which.max(diffs[diffs < 0]) else NA
-  downstream_idx <- if (any(diffs > 0)) which.min(diffs[diffs > 0]) else NA
 
-  selected_idx <- na.omit(c(
-    if (!is.na(upstream_idx)) which(diffs == max(diffs[diffs < 0]))[1],
-    if (!is.na(downstream_idx)) which(diffs == min(diffs[diffs > 0]))[1], #of NA for upstream_idx or downstream_idx is NA --> choose closest environmental station
-    if (is.na(upstream_idx) | is.na(downstream_idx)) which.min(abs(diffs)) #if no upstream or downstream station, choose closest station
-  ))
-  # ind <- which.min(abs(
-  #   data_filter_tij$distance_to_source_m[i] - metadata_tij$distance_to_source
-  # ))
-  closest <- get(paste(metadata_tij$name[ind], '_tij', sep = "")) #interval as interval
-  #closest$interval <- list(closest$interval)
-  #inverse dinstance rekenen met de tijdstippen van de tijdata
-  ind_arr <- which(data_filter_tij$arrival[i] %within% closest$interval)
-  ind_dep <- which(data_filter_tij$departure[i] %within% closest$interval)
-  data_filter_tij$tidetime_arr[i] <- closest$Timestamp[ind_arr]
-  data_filter_tij$tidetime_dep[i] <- closest$Timestamp[ind_dep]
-  data_filter_tij$ebb_w[i] <- Proportion$ebb_p[
-    Proportion$name == metadata_tij$name[ind]
-  ]
-  data_filter_tij$flood_w[i] <- Proportion$flood_p[
-    Proportion$name == metadata_tij$name[ind]
-  ]
-  if (closest$tij[ind_arr] == "HW") {
+  #calculate tij
+  for (j in c(ind_arr, ind_dep)) {
+    if (weighted$tij[j] == "HW") {
     data_filter_tij$tide_arrival[i] <- "ebb"
     data_filter_tij$tidetime_arr[i] <- interval(
-      start = closest$Timestamp[ind_arr],
+      start = weighted$Timestamp[j],
       end = data_filter_tij$arrival[i]
     )
   } else {
     data_filter_tij$tide_arrival[i] <- "flood"
     data_filter_tij$tidetime_arr[i] <- interval(
-      start = closest$Timestamp[ind_arr - 1],
+      start = weighted$Timestamp[j - 1],
       end = data_filter_tij$arrival[i]
     )
   }
-  if (closest$tij[ind_dep] == "HW") {
-    data_filter_tij$tide_departure[i] <- "ebb"
-    data_filter_tij$tidetime_dep[i] <- interval(
-      start = closest$Timestamp[ind_dep],
-      end = data_filter_tij$departure[i]
-    )
-  } else {
-    data_filter_tij$tide_departure[i] <- "flood"
-    data_filter_tij$tidetime_dep[i] <- interval(
-      start = closest$Timestamp[ind_dep - 1],
-      end = data_filter_tij$departure[i]
-    )
   }
 }
 
@@ -195,8 +172,10 @@ p2 <- ggplot(data_filter_tij, aes(x = hour(tidetime_dep))) + #hier hoever van ho
   theme(legend.position = "right") + #axis.title.x = element_text(size = 16)
   xlab("hours after high water")
 print(p1 | p2)
-ggsave("./figures/Tide/tidal_zone.png")
+#ggsave("./figures/Tide/tidal_zone.png")
 
+#env_data_tij maken
+temp <- concat_all_env_vars(data, "tij", metadata)
 
 #######################################################################
 # statistical analysis (chi-squared test)
