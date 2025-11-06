@@ -2,7 +2,7 @@
 # by Hanna Jaspaert
 # Hanna.Jaspaert@UGent.be
 get_idx_weights <- function(telemetry_data, metadata_filter, dist_split) {
-    diffs <- telemetry_data$distance_to_source_m -
+  diffs <- telemetry_data$distance_to_source_m -
     metadata_filter$distance_to_source
   diffs_refect <- -(abs(metadata_filter$distance_to_source - dist_split) +
     abs(dist_split - telemetry_data$distance_to_source_m))
@@ -35,15 +35,15 @@ get_idx_weights <- function(telemetry_data, metadata_filter, dist_split) {
 }
 
 get_weighted_tide <- function(selected_idx, w, metadata_tij) {
-  tz_use <- attr(x$Timestamp, "tzone")
-  if (is.null(tz_use) || tz_use == "") {
-    tz_use <- "UTC"
-  } #get your weighted tide
   if (length(selected_idx) == 1) {
     weighted <- get(paste(metadata_tij$name[selected_idx], '_tij', sep = "")) #interval as interval
   } else {
     x <- get(paste(metadata_tij$name[selected_idx[1]], '_tij', sep = "")) %>%
       mutate(w = w[selected_idx[1]])
+    tz_use <- attr(x$Timestamp, "tzone")
+    if (is.null(tz_use) || tz_use == "") {
+      tz_use <- "UTC"
+    } #get your weighted tide
     y <- get(paste(metadata_tij$name[selected_idx[2]], '_tij', sep = "")) %>%
       mutate(w = w[selected_idx[2]])
     test <- difference_inner_join(
@@ -65,5 +65,6 @@ get_weighted_tide <- function(selected_idx, w, metadata_tij) {
       ) %>%
       select(Timestamp, Value, tij, interval, interval_sec)
     weighted <- test
+    return(weighted)
   }
 }

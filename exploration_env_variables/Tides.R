@@ -6,6 +6,10 @@ library(wateRinfo)
 library(tidyr)
 library(tidyverse)
 library(patchwork)
+library(fuzzyjoin)
+
+#source functions
+source('./src/arrival_departure_tides_function.R')
 #Bij alle tidal measurement data:
 #bnt07a-1066, bnt03a-1066, bnt01c-1066, BS-RUP-1096, zes28a-1066, zes21a-1066, zes14a-1066, zes10a-1066, zen01a-1066
 #Tij bij kunnen zetten
@@ -139,20 +143,31 @@ for (i in 1:nrow(data_filter_tij)) {
   }
 
   #calculate tij
-  for (j in c(ind_arr, ind_dep)) {
-    if (weighted$tij[j] == "HW") {
+  if (weighted$tij[ind_arr] == "HW") {
     data_filter_tij$tide_arrival[i] <- "ebb"
     data_filter_tij$tidetime_arr[i] <- interval(
-      start = weighted$Timestamp[j],
+      start = weighted$Timestamp[ind_arr],
       end = data_filter_tij$arrival[i]
     )
   } else {
     data_filter_tij$tide_arrival[i] <- "flood"
     data_filter_tij$tidetime_arr[i] <- interval(
-      start = weighted$Timestamp[j - 1],
+      start = weighted$Timestamp[ind_arr - 1],
       end = data_filter_tij$arrival[i]
     )
   }
+  if (weighted$tij[ind_dep] == "HW") {
+    data_filter_tij$tide_departure[i] <- "ebb"
+    data_filter_tij$tidetime_dep[i] <- interval(
+      start = weighted$Timestamp[ind_dep],
+      end = data_filter_tij$departure[i]
+    )
+  } else {
+    data_filter_tij$tide_departure[i] <- "flood"
+    data_filter_tij$tidetime_dep[i] <- interval(
+      start = weighted$Timestamp[ind_dep - 1],
+      end = data_filter_tij$departure[i]
+    )
   }
 }
 
@@ -168,15 +183,25 @@ p1 <- ggplot(data_filter_tij, aes(x = hour(tidetime_arr))) + #hier hoever van ho
 p2 <- ggplot(data_filter_tij, aes(x = hour(tidetime_dep))) + #hier hoever van hoog en laag tij
   geom_bar(aes(fill = tide_departure)) +
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
-  labs(title = "Departures at receicers") +
-  theme(legend.position = "right") + #axis.title.x = element_text(size = 16)
+  labs(fill = "Tide") +
+  theme(
+    legend.position = "right",
+    axis.title.x = element_text(size = 24),
+    axis.title.y = element_text(size = 24),
+    legend.title = element_text(size = 24),
+    legend.text = element_text(size = 24),
+    axis.text.x = element_text(size = 20),
+    axis.text.y = element_text(size = 20)
+  ) + #rename legend title
   xlab("hours after high water")
-print(p1 | p2)
-#ggsave("./figures/Tide/tidal_zone.png")
+print(p2)
+ggsave("./figures/Tide/tidal_zone_dep.png")
 
-#env_data_tij maken
-temp <- concat_all_env_vars(data, "tij", metadata)
-
+write_csv(
+  data_filter_tij,
+  './data/interim/migration_filter_tides.csv',
+  col_names = TRUE
+)
 #######################################################################
 # statistical analysis (chi-squared test)
 #######################################################################
@@ -193,7 +218,7 @@ prop_sum <- c(
 )
 
 chi_test <- chisq.test(x = Counts$tidal, p = prop_sum)
-
+chi_test$p.value
 #illustration of proportion flood/ebb
 ggplot(bnt01c_1066_tij) +
   geom_boxplot(aes(x = tij, y = interval_sec))

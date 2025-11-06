@@ -34,7 +34,18 @@ dist_split <- lookup %>%
 ##############################################################################
 # Link environmental data with RAW telemetry data
 ##############################################################################
-variables <- c("Tw","Tw_an","Q","Q_an", "photoperiod", "R", "S", "turb", "O", "V")#maken zodat Q en Tw er ook bijkunnen
+variables <- c(
+  "Tw",
+  "Tw_an",
+  "Q",
+  "Q_an",
+  "photoperiod",
+  "R",
+  "S",
+  "turb",
+  "O",
+  "V"
+) #maken zodat Q en Tw er ook bijkunnen
 p <- 1
 for (var in variables) {
   temp <- concat_all_env_vars(data, var, metadata) # averaging the environmental variables to fit telemetry data
@@ -43,8 +54,12 @@ for (var in variables) {
     data[[var]] <- env_data_photoperiod$photoperiod
     next
   }
-  if (var == "Q_an"|var == "Q") {
-    env_data_Q_norm <- scale(get(paste0("env_data_", var)), center = TRUE, scale = TRUE) #JE KAN SCALE OOK WEGHALEN
+  if (var == "Q_an" | var == "Q") {
+    env_data_Q_norm <- scale(
+      get(paste0("env_data_", var)),
+      center = TRUE,
+      scale = TRUE
+    ) #JE KAN SCALE OOK WEGHALEN
     data[[var]] <- inverse_distance(data, env_data_Q_norm, metadata, p, var) # INVERSE DISTANCE WEIGHTING
     next
   }
