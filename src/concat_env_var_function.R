@@ -1,5 +1,5 @@
 # Function to to link one environmental variable to the processed telemetry data
-concat_env_var <- function(telemetry_data, metadata, env_data) {
+concat_env_var <- function(telemetry_data, metadata, env_data, data_type) {
   #dep_time <- round_date(telemetry_data$departure,unit = metadata$resolution[1])
   #arr_time <- round_date(telemetry_data$arrival,unit = metadata$resolution[1])
   # calculate the mean temperature between arrival an departure
@@ -17,17 +17,30 @@ concat_env_var <- function(telemetry_data, metadata, env_data) {
           a$arrival[i] + a$residence[i] / 2,
           unit = metadata$resolution[1]
         )
-        return(mean(
-          x$Value[x$Timestamp >= beg_time & x$Timestamp <= end_time],
-          na.rm = TRUE
-        ))
+        if (data_type == "R") {
+          return(median(
+            x$Value[x$Timestamp >= beg_time & x$Timestamp <= end_time],
+            na.rm = TRUE
+          ))
+        } else {
+          return(mean(
+            x$Value[x$Timestamp >= beg_time & x$Timestamp <= end_time],
+            na.rm = TRUE
+          ))
+        }
       },
       x = env_data
     ))
-    a$temp[1] <- mean(env_data$Value[
+    if (data_type == "R") {
+    a$temp[1] <- median(env_data$Value[
       env_data$Timestamp ==
         round_date(a$departure[1], unit = metadata$resolution[1])
-    ])
+    ])} else {
+      a$temp[1] <- mean(env_data$Value[
+        env_data$Timestamp ==
+          round_date(a$departure[1], unit = metadata$resolution[1])
+      ])
+    }
     return(a)
     #print(paste("a$temp: ",length(a$temp)))
   })

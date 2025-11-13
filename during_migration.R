@@ -35,7 +35,7 @@ data_env <- read_csv(
 
 
 data_env <- data_env %>%
-  filter(zone == "non-tidal") %>% #| zone == "transition") %>%
+  filter(zone == "non-tidal") %>% # | zone == "transition") %>%
   filter(
     !tag_serial_number %in%
       c(1171747, 1171751, 1294168, 1294172)
@@ -171,12 +171,11 @@ ggplot(data_env, aes(x = delta_Q, y = delta_Tw, color = label_bin)) +
 ######################################################
 # Built model
 mod_tag <- glmer(
-  label_bin ~ (1 | tag_serial_number) + photoperiod + Tw + R + Q, # arrival_circadian
+  label_bin ~ (1 | tag_serial_number) + photoperiod + Tw + Q + R, # arrival_circadian
   data = data_env,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),
-  nAGQ = 10,
-  contrasts = list(arrival_circadian = "contr.sum")
+  nAGQ = 20
 )
 summary(mod_tag)
 

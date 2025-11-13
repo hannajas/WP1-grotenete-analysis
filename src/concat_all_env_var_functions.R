@@ -19,7 +19,8 @@ concat_all_env_vars <- function(telemetry_data, data_type, metadata) {
     telemetry_data[metadata_filter$name[i]] <- concat_env_var(
       telemetry_data,
       metadata_filter[i, ],
-      env_data
+      env_data,
+      data_type
     )
   }
 

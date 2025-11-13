@@ -62,21 +62,21 @@ inverse_distance <- function(
   # dealing with the nan values in temperature values
   W[nan_V] <- 0
 
-  if (data_type == "Q" | data_type == "V"| data_type == "Q_an") {
-    #enkel gewicht als binnen zelfde rivier segment
-    ind_row_gn <- which(telemetry_data$inter_segment == "gn")
-    ind_col_gn <- which(metadata_filter$segment != "gn")
-    ind_row_rup <- which(telemetry_data$inter_segment == "rup")
-    ind_col_rup <- which(metadata_filter$segment != "rup")
-    ind_row_zes <- which(
-      telemetry_data$inter_segment == "zes_up" |
-        telemetry_data$inter_segment == "zes_down"
-    )
-    ind_col_zes <- which(metadata_filter$segment != "zes")
-    W[ind_row_gn, ind_col_gn] <- 0
-    W[ind_row_rup, ind_col_rup] <- 0
-    W[ind_row_zes, ind_col_zes] <- 0
-  }
+  # if (data_type == "Q" | data_type == "V"| data_type == "Q_an") {
+  #   #enkel gewicht als binnen zelfde rivier segment
+  #   ind_row_gn <- which(telemetry_data$inter_segment == "gn")
+  #   ind_col_gn <- which(metadata_filter$segment != "gn")
+  #   ind_row_rup <- which(telemetry_data$inter_segment == "rup")
+  #   ind_col_rup <- which(metadata_filter$segment != "rup")
+  #   ind_row_zes <- which(
+  #     telemetry_data$inter_segment == "zes_up" |
+  #       telemetry_data$inter_segment == "zes_down"
+  #   )
+  #   ind_col_zes <- which(metadata_filter$segment != "zes")
+  #   W[ind_row_gn, ind_col_gn] <- 0
+  #   W[ind_row_rup, ind_col_rup] <- 0
+  #   W[ind_row_zes, ind_col_zes] <- 0
+  # }
   telemetry_data$temp <- rowSums(V * W, na.rm = TRUE) /
     rowSums(W, na.rm = TRUE)
 
