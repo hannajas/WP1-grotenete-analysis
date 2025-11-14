@@ -501,7 +501,7 @@ cor_mat <- data_balanced %>%
 first_mod_glm <- glm(
   label_bin ~ Tw_an + Q_an + R + photoperiod,
   data = data_env,
-  family = binomial(link="cloglog")
+  family = binomial(link = "cloglog")
 )
 summary(first_mod_glm)
 
@@ -523,7 +523,7 @@ mod_tag <- glmm(
 mod_tag <- glmer(
   label_bin ~ Q_an + R + Tw_an + photoperiod + (1 | tag_serial_number),
   data = data_env,
-  family = binomial(link="cloglog"),
+  family = binomial(link = "cloglog"),
   control = glmerControl(optimizer = "bobyqa"),
   nAGQ = 100,
   #contrasts = list(departure_circadian = "contr.sum")
@@ -753,7 +753,5 @@ summary(mod_tag)
 
 ggplot(data_env) +
   geom_point(aes(x = V, y = photoperiod))
-
-
 
 ######################################################################
