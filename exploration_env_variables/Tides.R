@@ -209,7 +209,7 @@ write_csv(
 #heb ik voor alle detecties de proportie flood/ebb berekend door rekening te houden met de proportie flood/ebb in het dichtst
 #bijzijnde tij meetpunt
 Counts <- data_filter_tij %>%
-  group_by(zone, tide_arrival) %>%
+  group_by(zone, tide_departure) %>%
   summarise(count = n(), .groups = 'drop') %>%
   pivot_wider(names_from = zone, values_from = count, values_fill = 0)
 prop_sum <- c(

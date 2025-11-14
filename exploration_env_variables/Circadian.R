@@ -49,7 +49,8 @@ data_eels <- read_csv(
     )
   ) %>%
   ungroup() %>%
-  filter(label %in% c("migratory", "resting"))
+  filter(label %in% c("migratory", "resting")) %>%
+  filter(!startsWith(station_name, "rel"))
 
 # Sunlight phases --------------------------------------------------------
 circadian <- getSunlightTimes(
@@ -67,8 +68,8 @@ phase_defs <- list(
   day = c("sunrise", "sunset"),
   dusk = c("sunset", "night")
 )
-#3 phases? trwilight_log = TRUE --> dawn + dusk
-twilight_log <- FALSE
+#3 phases? twilight_log = TRUE --> dawn + dusk
+twilight_log <- TRUE
 
 # Function to compute circadian weights ----------------------------------
 compute_circadian_weights <- function(circadian, phase_defs) {
@@ -121,22 +122,43 @@ walk2(grid$period, grid$event, function(p, e) {
 #write.csv(data_eels, './data/interim/migration_circadian.csv', row.names = FALSE)
 
 # plot the arrivals
+colorscheme <- c(
+  dawn     = "#F1C40F",
+  day      = "#a7f6a0",
+  dusk     = "#E67E22",
+  night    = "#b581ca",
+  twilight = "#7da9d5"
+)
+
+# arrivals (no legend)
 p1 <- ggplot(data_eels, aes(x = hour(arrival))) +
   geom_bar(aes(fill = arrival_circadian)) +
+  scale_fill_manual(values = colorscheme, na.value = "grey60") +
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
-  labs(title = "Arrivals at receicers") + #remove legend
+  labs(title = "Arrivals at receivers") +
   theme(legend.position = "none") +
   facet_wrap(~zone)
-# departures
+
+# departures (with legend)
 p2 <- ggplot(data_eels, aes(x = hour(departure))) +
   geom_bar(aes(fill = departure_circadian)) +
+  scale_fill_manual(values = colorscheme, na.value = "grey60") +
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
-  labs(title = "Departures at receicers") + #add a legend to describe the polar axis
-  theme(legend.position = "bottom") +
-  guides(fill = guide_legend(title = "Circadian phase")) +
+  labs(fill = "Circadian phase") +
+  theme(
+    legend.position = "bottom",
+    axis.title.x = element_text(size = 24),
+    axis.title.y = element_text(size = 24),
+    legend.title = element_text(size = 24),
+    legend.text = element_text(size = 24),
+    axis.text.x = element_text(size = 20),
+    axis.text.y = element_text(size = 20),
+    strip.text = element_text(size = 20)
+  ) + #rename legend title
   facet_wrap(~zone)
+
 print(p1 / p2)
-#ggsave("./figures/Circadian/circadian_tidal.png")
+#ggsave("./figures/Circadian/circadian_tidal_dep.png")
 # meeste arrivals en departures tussen 18u en 21u
 
 # compare the proportions of arrivals and departures in the different phases

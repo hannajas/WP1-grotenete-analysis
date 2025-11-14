@@ -142,6 +142,7 @@ for (i in 1:length(ts_id)) {
 
 ######################################################################
 #tides
+# Timeseriesgroup_id 156165
 name <- c(
   "bnt07a_1066",
   "bnt03a_1066",
@@ -150,7 +151,11 @@ name <- c(
   "zes21a_1066",
   "zes14a_1066",
   "zes10a_1066",
-  "zes01a_1066"
+  "zes01a_1066",
+  "zes47a_1066",
+  "zes42a_1066",
+  "zes39a_1066",
+  "zes36a_1066"
 )
 ts_id <- c(
   "54829010",
@@ -160,7 +165,11 @@ ts_id <- c(
   "53995010",
   "54612010",
   "54942010",
-  "54581010"
+  "56094010",
+  "54581010",
+  "54192010",
+  "55425010",
+  "102377010"
 ) #ts_id_getij <- read.csv("./data/tij_all_identifiers.txt")
 for (i in 1:length(ts_id)) {
   tide <- get_timeseries_tsid(
