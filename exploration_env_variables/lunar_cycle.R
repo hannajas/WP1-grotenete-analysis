@@ -8,6 +8,7 @@ library(tidyverse)
 library(patchwork)
 library(fuzzyjoin)
 library(lubridate)
+library(stats)
 
 lunar_cycle <- read_csv(
   "./data/raw/lunar_cycle/lunar_cycle.csv",
@@ -107,25 +108,88 @@ intervals <- quarters %>%
   filter(!is.na(period)) %>%
   select(start, end, period, interval)
 
-fuzzy_left_join(
+detection_type <- "departure"
+data_eels_lunar <- fuzzy_left_join(
   data_eels,
   intervals,
-  by = c("departure" = "interval"),
+  by = setNames("interval", detection_type),
+  ,
   match_fun = `%within%`
 ) %>%
-  select(-c(start, end, interval)) -> data_eels_lunar
+  select(-c(start, end, interval))
+
+full_moons <- lunar_cycle %>%
+  filter(!is.na(moon_phase) & str_detect(tolower(moon_phase), "full")) %>%
+  pull(date) %>%
+  unique() %>%
+  sort()
+
+# numeric vectors for fast indexing
+fm_num <- as.numeric(full_moons)
+dep_num <- as.numeric(data_eels_lunar[[detection_type]])
+idx <- findInterval(dep_num, fm_num) # 0 when departure is before first full moon
+last_full <- ifelse(idx == 0, as.numeric(NA), fm_num[idx])
+data_eels_lunar <- data_eels_lunar %>%
+  mutate(
+    last_full_moon = as.POSIXct(
+      last_full,
+      origin = "1970-01-01",
+      tz = attr(full_moons, "tz") %||% "UTC"
+    ),
+    days_since_last_full = round(as.numeric(difftime(
+      data_eels_lunar[[detection_type]],
+      last_full_moon,
+      units = "days"
+    ))),
+    # days_since_last_full = interval(
+    #   start = data_eels_lunar[[detection_type]],
+    #   end = last_full_moon
+    # )
+  )
 
 
 #plot circle diagram full_moon vs new_moon
-p1 <- ggplot(data_eels_lunar, aes(x = label, fill = period)) +
-  geom_bar(position = "dodge") +
-  scale_fill_discrete(
-    name = "Lunar Period",
-    labels = c("Full Moon Period", "New Moon Period")
+p2 <- ggplot(data_eels_lunar, aes(x = days_since_last_full)) + #hier hoever van hoog en laag tij
+  geom_bar(aes(fill = period), color = "black") +
+  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
+  scale_fill_manual(
+    name = "Lunar cycle",
+    values = c("new_moon_period" = "#2E86C1", "full_moon_period" = "#F39C12"),
+    labels = c(
+      "new_moon_period" = "near new moon",
+      "full_moon_period" = "near full moon"
+    )
   ) +
-  xlab("Behavioral State") +
-  ylab("Number of Detections") +
-  ggtitle("Detections during Lunar Periods") +
-  theme_minimal()
+  style +
+  theme(axis.line = element_blank()) +
+  xlab("days after full moon") #+
+# facet_wrap(~zone)
+print(p2)
+ggsave("./figures/lunar/lunar_cycle_detections.png")
 
-#doesnt seem to have an effect
+test <- data_eels_lunar %>%
+  filter(
+    period == "full_moon_period",
+    days_since_last_full >= 10 &
+      days_since_last_full <= 20
+  )
+###########################################################################################
+# chi-squared test
+###########################################################################################
+Counts <- data_eels_lunar %>%
+  group_by(period, zone) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  pivot_wider(names_from = period, values_from = count, values_fill = 0)
+
+proportions <- intervals %>%
+  group_by(period) %>%
+  summarise(
+    total_duration = sum(as.numeric(int_length(interval)), na.rm = TRUE)
+  ) %>%
+  mutate(proportion = total_duration / sum(total_duration))
+
+chi_test <- chisq.test(
+  x = Counts[Counts$zone == 'transition', 2:3],
+  p = proportions$proportion
+) #[Counts$zone == 'non-tidal',2:3]
+chi_test$p.value

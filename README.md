@@ -36,7 +36,8 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 	+ `distancematrix_2019_grotenete.csv`: distance matrix of the detection station network (matrices are created at https://github.com/inbo/fish-tracking).
 
 ### Scripts
-
+General parameters
+* `set_up.R`: e.g. style of figures
 Data collection and explorative analysis I
 * `/importing_data/waterRinfo.R:` Making use of the wateRinfo package and save the data at `/raw` (timezone = UCT)
 * `switch_2D_1D.R:`:

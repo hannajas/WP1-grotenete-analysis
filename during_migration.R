@@ -2,6 +2,7 @@ library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(lme4)
+library(DHARMa)
 
 ########################################################
 #make selection in the data
@@ -179,16 +180,11 @@ mod_tag <- glmer(
 )
 summary(mod_tag)
 
+simRes <- simulateResiduals(fittedModel = mod_tag, n = 10000) # n as desired
+plot(simRes)
+time_num <- as.numeric(data_env$arrival) # or data_env$time (numeric index)
+DHARMa::testTemporalAutocorrelation(simRes, time = time_num, plot = TRUE)
 
-mod_tag <- glmer(
-  speed_m_s ~ (1 | tag_serial_number) + Q + R + Tw + photoperiod, #arrival_circadian + photoperiod + Q + Tw
-  data = data_env,
-  family = gaussian,
-  #control = glmerControl(optimizer = "bobyqa"),
-  #nAGQ = 10,
-  contrasts = list(arrival_circadian = "contr.sum")
-)
-summary(mod_tag)
 
 first_mod_glm <- glm(
   log(speed_m_s) ~ Q + photoperiod + R + Tw, #delta_Tw + delta_Q + R + Tw + photoperiod + V

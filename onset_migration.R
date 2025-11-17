@@ -4,17 +4,9 @@ library(geosphere)
 library(ggplot2)
 library(themis) #package to deal with unbalanced data
 library(lubridate)
-style <- theme(
-  axis.line = element_line(colour = "black"),
-  axis.text.x = element_text(size = 25, colour = "black", angle = 90),
-  axis.title.x = element_text(size = 30),
-  axis.text.y = element_text(size = 30),
-  axis.title.y = element_text(size = 30),
-  strip.text = element_text(size = 22), #title of facet wrap bigger
-  legend.text = element_text(size = 27),
-  legend.title = element_text(size = 30),
-)
 library(lme4)
+library(glmmTMB)
+library(DHARMa)
 
 ########################################################
 #make selection in the data
@@ -379,7 +371,10 @@ data_env <- data %>%
     R = scale(R, scale = true_scale),
     distance_to_source_m = scale(distance_to_source_m, scale = true_scale)
   ) %>%
-  filter(!is.na(label_bin))
+  filter(!is.na(label_bin)) %>%
+  group_by(tag_serial_number) %>%
+  mutate(time = as.factor(as.numeric(row_number()))) %>%
+  ungroup()
 
 
 ######################################################
@@ -409,6 +404,7 @@ cor_mat <- data_env %>%
 
 ggplot(data_env, aes(x = V, y = Tw, color = label)) +
   geom_point()
+
 
 ######################################################
 # RANDOM UNDERSAMPLING
@@ -529,7 +525,41 @@ mod_tag <- glmer(
   #contrasts = list(departure_circadian = "contr.sum")
 )
 summary(mod_tag)
-mod_tag$res
+simRes <- simulateResiduals(fittedModel = mod_tag, n = 10000) # n as desired
+plot(simRes)
+time_num <- as.numeric(data_env$arrival) # or data_env$time (numeric index)
+DHARMa::testTemporalAutocorrelation(simRes, time = time_num, plot = TRUE)
+#plot in function of arrival
+plot()
+######################################################
+#WITH AUTOCORRELATION
+data_env <- data_env %>%
+  arrange(tag_serial_number, arrival) %>%
+  group_by(tag_serial_number) %>%
+  mutate(
+    time_numeric = as.numeric(
+      arrival %--% lag(departure),
+      # optional: integer index (e.g. 15-min bins) if you prefer discrete occasions
+      time_index = as.integer(round(time_numeric / (15 * 60))),
+      timef = factor(time_index)
+    )
+  ) %>%
+  ungroup() %>%
+  mutate(tag_serial_number = factor(tag_serial_number))
+
+
+glmmTMB_mod <- glmmTMB(
+  label_bin ~ Q_an +
+    Tw_an +
+    photoperiod +
+    R +
+    ar1(time + 0 | tag_serial_number),
+  data = data_env,
+  family = binomial(link = "cloglog"),
+  control = glmmTMBControl(optimizer = "nlminb", optCtrl = list(iter.max = 1e5))
+)
+summary(glmmTMB_mod)
+
 
 ######################################################
 #check assumptions
