@@ -135,13 +135,19 @@ data <- left_join(
 ######################################################
 #Conditions
 ######################################################
+#data_env$R <- log(data_env$R)
+data_env %>%
+  dplyr::select(R, cluster) %>%
+  group_by(cluster) %>%
+  summarise(mean_R = mean(R, na.rm = TRUE), median_R = median(R, na.rm = TRUE))
+
 variables <- c(
   "speed_m_s",
   "Q",
-  "Q_an",
+  #"Q_an",
   #"delta_Q",#DELTA zegt niets bij raw data (delta over versch tijdspannes)
   "Tw",
-  "Tw_an",
+  #"Tw_an",
   #"delta_Tw",
   #"S",aan als tidal data ook in rekening
   #"turb",
@@ -166,16 +172,16 @@ data_env_long <- data_env %>%
       levels = variables
     )
   )
-y_labels <- c(
-  speed_m_s = "Eel speed (m/s)",
-  photoperiod = "Photoperiod (min)",
-  Tw = "Temperature (°C)",
-  Tw_an = "Temperature anomaly (°C)",
-  Q = "Discharge (m³/s)",
-  Q_an = "Discharge anomaly (m³/s)",
-  V = "Velocity (m/s)",
-  R = "Rainfall (mm)"
-)
+# y_labels <- c(
+#   speed_m_s = "Eel speed (m/s)",
+#   photoperiod = "Photoperiod (min)",
+#   Tw = desparse(bquote(~(T_w)"(°C)")),
+#   Tw_an = "Temperature anomaly (°C)",
+#   Q = "Discharge (-)",
+#   Q_an = "Discharge anomaly (m³/s)",
+#   V = "Velocity (m/s)",
+#   R = "Rainfall (mm)"
+# )
 p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose the colors
   #scale_fill_manual(values = c("all" = "blue", "first_resident" = "red"), alpha = 0.5) +
   geom_boxplot(position = "dodge") +
@@ -183,21 +189,30 @@ p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose th
     ~variable,
     nrow = 1,
     scales = "free",
-    labeller = as_labeller(y_labels)
+    labeller = as_labeller(
+      c(
+        "speed_m_s" = "v~\"(m/s)\"",
+        "photoperiod" = "P~\"(min)\"",
+        "Tw" = "T[w]~\"(°C)\"",
+        "Q" = "Q[scaled]~\"(-)\"",
+        "V" = "V[w]~\"(m/s)\"",
+        "R" = "R~\"(mm)\""
+      ),
+      label_parsed
+    )
   ) +
   style +
   theme(
     axis.title.y = element_blank(),
     axis.title.x = element_blank(),
-    axis.text.x = element_blank()
+    axis.text.x = element_blank(),
+    strip.text = element_text(size = 18)
   ) +
   windows(width = 16, height = 5)
 plot(p)
-# ggsave(
-#   "./figures/Clustering/boxplot_labelled_non_tidal.png",
-#   height = 7,
-#   width = 22
-# )
+ggsave(
+  "./figures/Clustering/boxplot_labelled_non_tidal_Qscaled.png"
+)
 
 ######################################################
 # Short-term trigger - INTERPOLATED DATA
@@ -305,7 +320,7 @@ p <- ggplot(data_onset, aes(x = hour(departure))) +
     limits = c(0, 24) # ensure full circle
   ) +
   style +
-  theme(axis.line = element_blank()) +
+  theme(axis.line = element_blank(), strip.text = element_text(size = 25)) +
   labs(
     #title = "Onset of migration",
     x = "Hour of departure",
@@ -392,14 +407,14 @@ palette <- c("resident" = "blue", "migration" = "red")
 col_vec <- palette[as.character(cols)]
 
 pairs(
-  data_env %>% dplyr::select(Tw_an, Q_an, photoperiod, R),
+  data_env %>% dplyr::select(Tw_an, Q_an, Q, Tw, photoperiod, R),
   col = adjustcolor(col_vec, alpha.f = 0.5),
   pch = 22
 )
 
 #correlation matrix
 cor_mat <- data_env %>%
-  dplyr::select(Tw_an, Q_an, photoperiod, R) %>%
+  dplyr::select(Tw_an, Tw, Q_an, Q, photoperiod, R) %>%
   cor(use = "pairwise.complete.obs")
 
 ggplot(data_env, aes(x = V, y = Tw, color = label)) +
@@ -521,7 +536,7 @@ mod_tag <- glmer(
   data = data_env,
   family = binomial(link = "cloglog"),
   control = glmerControl(optimizer = "bobyqa"),
-  nAGQ = 100,
+  nAGQ = 1000,
   #contrasts = list(departure_circadian = "contr.sum")
 )
 summary(mod_tag)

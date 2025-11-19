@@ -123,10 +123,10 @@ walk2(grid$period, grid$event, function(p, e) {
 
 # plot the arrivals
 colorscheme <- c(
-  dawn     = "#F1C40F",
-  day      = "#a7f6a0",
-  dusk     = "#E67E22",
-  night    = "#b581ca",
+  dawn = "#F1C40F",
+  day = "#a7f6a0",
+  dusk = "#E67E22",
+  night = "#b581ca",
   twilight = "#7da9d5"
 )
 
@@ -137,6 +137,7 @@ p1 <- ggplot(data_eels, aes(x = hour(arrival))) +
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
   labs(title = "Arrivals at receivers") +
   theme(legend.position = "none") +
+  style +
   facet_wrap(~zone)
 
 # departures (with legend)
@@ -144,21 +145,24 @@ p2 <- ggplot(data_eels, aes(x = hour(departure))) +
   geom_bar(aes(fill = departure_circadian)) +
   scale_fill_manual(values = colorscheme, na.value = "grey60") +
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
-  labs(fill = "Circadian phase") +
+  labs(
+    fill = "Circadian phase",
+    x = "hour of departure",
+    y = "# observations"
+  ) +
+  style +
   theme(
     legend.position = "bottom",
     axis.title.x = element_text(size = 24),
     axis.title.y = element_text(size = 24),
-    legend.title = element_text(size = 24),
-    legend.text = element_text(size = 24),
-    axis.text.x = element_text(size = 20),
-    axis.text.y = element_text(size = 20),
-    strip.text = element_text(size = 20)
+    axis.text.x = element_text(size = 24),
+    axis.text.y = element_text(size = 24)
   ) + #rename legend title
   facet_wrap(~zone)
 
 print(p1 / p2)
-#ggsave("./figures/Circadian/circadian_tidal_dep.png")
+print(p2)
+ggsave("./figures/Circadian/circadian_tidal_dep.png")
 # meeste arrivals en departures tussen 18u en 21u
 
 # compare the proportions of arrivals and departures in the different phases
@@ -236,22 +240,22 @@ chi_transition <- chisq.test(
     sum(Proportions_contr$transition[keep])
 ) #NOT SIGNIFICANT
 
+#######################################################################
+# percentage between 18 and 21u
+#######################################################################
+read_csv('./data/interim/migration_circadian.csv') -> data_eels
+data_eels %>%
+  filter(
+    hour(arrival) >= 17 & hour(arrival) <= 22
+  ) %>%
+  group_by(zone) %>%
+  summarise(n = n()) %>%
+  left_join(
+    data_eels %>%
+      group_by(zone) %>%
+      summarise(total = n()),
+    by = "zone"
+  ) %>%
+  mutate(percentage = n / total * 100)
 
-##############################################################################################
-#visualization
-#############################################################################################
-Proportions_long <- pivot_longer(
-  Proportions,
-  cols = c("controlle", "effective"),
-  names_to = "type",
-  values_to = "proportion"
-)
-
-ggplot(Proportions, aes(x = phase, fill = type)) +
-  geom_bar(aes(y = proportion), stat = "identity", position = "dodge") +
-  labs(title = "Circadian phase proportions") +
-  theme(legend.position = "bottom") +
-  guides(fill = guide_legend(title = "Circadian phase")) +
-  ylab("Proportion") +
-  xlab("Circadian phase") +
-  scale_y_continuous(labels = scales::percent_format(scale = 1))
+5 / 24

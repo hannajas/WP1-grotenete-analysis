@@ -56,6 +56,10 @@ for (i in 1:n) {
 #########################################################################
 # arrival departure analysis
 #########################################################################
+# data_filter_tij <- read_csv(
+#   './data/interim/migration_filter_tides.csv',
+#   show_col_types = FALSE
+# )
 p <- 1
 
 data_filter_tij <- data_filter %>%
@@ -183,19 +187,21 @@ p1 <- ggplot(data_filter_tij, aes(x = hour(tidetime_arr))) + #hier hoever van ho
 p2 <- ggplot(data_filter_tij, aes(x = hour(tidetime_dep))) + #hier hoever van hoog en laag tij
   geom_bar(aes(fill = tide_departure)) +
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
-  labs(fill = "Tide") +
-  theme(
-    legend.position = "right",
-    axis.title.x = element_text(size = 24),
-    axis.title.y = element_text(size = 24),
-    legend.title = element_text(size = 24),
-    legend.text = element_text(size = 24),
-    axis.text.x = element_text(size = 20),
-    axis.text.y = element_text(size = 20)
-  ) + #rename legend title
-  xlab("hours after high water")
+  scale_x_continuous(limits = c(0, 12), breaks = 0:12, expand = c(0, 0)) +
+  labs(fill = "Tide", y = element_blank(), x = "hours after high water") +
+  style +
+  annotate(
+    "text",
+    x = 24, # place at "north" outer edge
+    y = 20, # halfway up radial axis
+    label = "# obs",
+    angle = 90, # vertical orientation
+    hjust = 0.4,
+    vjust = 1.4,
+    size = 11
+  )
 print(p2)
-ggsave("./figures/Tide/tidal_zone_dep.png")
+ggsave("./figures/Tide/tidal_zone_dep.png", p2, width = 7, height = 7)
 
 write_csv(
   data_filter_tij,

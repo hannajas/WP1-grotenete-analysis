@@ -152,6 +152,11 @@ data_eels_lunar <- data_eels_lunar %>%
 p2 <- ggplot(data_eels_lunar, aes(x = days_since_last_full)) + #hier hoever van hoog en laag tij
   geom_bar(aes(fill = period), color = "black") +
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
+  scale_x_continuous(
+    limits = c(0, 30),
+    breaks = c(0, 5, 10, 15, 20, 25, 30),
+    expand = c(0, 0)
+  ) +
   scale_fill_manual(
     name = "Lunar cycle",
     values = c("new_moon_period" = "#2E86C1", "full_moon_period" = "#F39C12"),
@@ -161,8 +166,17 @@ p2 <- ggplot(data_eels_lunar, aes(x = days_since_last_full)) + #hier hoever van 
     )
   ) +
   style +
-  theme(axis.line = element_blank()) +
-  xlab("days after full moon") #+
+  labs(y = element_blank(), x = "days after full moon") +
+  annotate(
+    "text",
+    x = 30, # place at "north" outer edge
+    y = 28, # halfway up radial axis
+    label = "# obs",
+    angle = 90, # vertical orientation
+    hjust = 0.4,
+    vjust = 1.4,
+    size = 11
+  )
 # facet_wrap(~zone)
 print(p2)
 ggsave("./figures/lunar/lunar_cycle_detections.png")
