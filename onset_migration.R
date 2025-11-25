@@ -536,7 +536,7 @@ mod_tag <- glmer(
   data = data_env,
   family = binomial(link = "cloglog"),
   control = glmerControl(optimizer = "bobyqa"),
-  nAGQ = 1000,
+  nAGQ = 500,
   #contrasts = list(departure_circadian = "contr.sum")
 )
 summary(mod_tag)
