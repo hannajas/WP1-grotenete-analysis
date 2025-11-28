@@ -87,16 +87,17 @@ Clustering (resting + resident) Vs migratory
     + 1 = resident, 2 = migration
 
 Explorative analysis II
-* `link_env_variables.R:` linking the environmental variables with the telemetry raw data (R becomes the accumulated data)
+* `link_env_variables.R:` linking the environmental variables with the telemetry raw data
     
     For each type of environmental data (upload `./data/interim/migration_filter.csv` and save to `./data/interim/migration_env_filter.csv`):
 
     + For each data point: `\src\concat_env_var_function.R:` function to average the environmental data over the swimtimes of the eels between 2 receivers.
-    + in `\src\concat_all_env_var_function.R:` de outputs van `concat_env_var_function.R` voor verschillende meetlocaties van de zelfde variabele worden gebundeld.
+        + for rainfall data the median is used
+        + all over variables the mean is calculated
+    + `\src\concat_all_env_var_function.R:` the outputs of `concat_env_var_function.R` of the measurement points of each variable is clustered.
     + `\src\inverse_distance_function.R:` get one value out of the different datapoints by performing inverse distance weighting for each point in the migration trajectory
         -  If 1D along river: Closest upstream en downstream environmental data point is used
-            - When datatype = "Q", there are 3 segments defined. To link environmental data with the receivers each receiver can only get information from data-point that are located whitin the same segment.
-            - Q is normalised over traject
+            - Q is scaled before inverse distance is applied (to correct for increasing discharge more downstream)
         - 2D (Rainfall): involve all datapoints
 
 * Trajectory smoothing
