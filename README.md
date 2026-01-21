@@ -44,32 +44,13 @@ Data download
 * `/data_download/wateRinfo.R:` Making use of the wateRinfo package and save the data at `/raw` (timezone = UCT)
 
 Data preprocessing
-* `/data_preprocessing/switch_2D_1D.R:`:
+* `01_switch_2D_1D.R:`:
     + load the point vector made in QGIS (includes study area, resolution 1m) --> lookup table
     + process so that to each point a distance_to_source is calculated
     + add in NAAM column the river segment: gn, rp, zes_up, zes_down (lookup table saved as: `./data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv`)
     + calculate the distance to source for each receiver (saved in `./data/geo_data/deployments_distance_to_source.csv`)
 
-* `/data_preprocessing/environmental_variables:` making some figures of the environmental data and do the preprocessing (save the data at `/interim`). For some datatypes also analyses:
-    + `\chemical_var.R:` preprocessing of salinity, turbidity and dissolved oxygen
-    + `\discharge.R:` preprocessing of discharge
-    + `\rainfall.R:` preprocessing of rainfall. Later in the analysis the accumulated rainfall will be used (release time as startingpoint)
-    + `\Watertemperature.R`: preprocessing of watertemperature (+ looking at correlations between measurements)
-    + `\Circadian.R:` arrival/departure analysis + chi-squared test
-    + `\Tides.R:` arrival/departure analysis. ebb/flood at receiver was decided based on closest measuring point
-    + `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
-    + `\metadata.R:`: processing metadata
-        - e.g calculated distance to source based on lookup table
-    + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities) and measured velocity
-
-
-* `/data_preprocessing/get_cross_section_velocities.R:` Calculate the water velocity for 5 locations (5 locations with Q-data and cross section data)
-
-    For each location:
-    + `\src\get_velocity_function.R:` Making use of waterlevel, discharge and H-A relations (save the data at `/interim`)
-
-
-* `/data_preprocessing/preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration.csv` and `/interim/migration_filter.csv`)
+* `02_preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration.csv` and `/interim/migration_filter.csv`)
     + timestamps in raw data are in timezone UTC
     + recalcutate the smooth eel track (remove timelimit for which a new track was started)
     + recalculate the distance_to_source (because of higher resolution if the lookup table in comparison to the original distance matrix)
@@ -85,7 +66,26 @@ Data preprocessing
     + add column to divide in segements: gn, rup, zes_up, zes_down
     + add coordinates of the interpolation_location (making use of the lookup table)
 
-* `/data_preprocessing/link_env_variables.R:` linking the environmental variables with the telemetry raw data
+* `03_environmental_variables:` making some figures of the environmental data and do the preprocessing (save the data at `/interim`). For some datatypes also analyses:
+    + `\chemical_var.R:` preprocessing of salinity, turbidity and dissolved oxygen
+    + `\discharge.R:` preprocessing of discharge
+    + `\rainfall.R:` preprocessing of rainfall. Later in the analysis the accumulated rainfall will be used (release time as startingpoint)
+    + `\Watertemperature.R`: preprocessing of watertemperature (+ looking at correlations between measurements)
+    + `\Circadian.R:` arrival/departure analysis + chi-squared test
+    + `\Tides.R:` arrival/departure analysis. ebb/flood at receiver was decided based on closest measuring point
+    + `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
+    + `\metadata.R:`: processing metadata
+        - e.g calculated distance to source based on lookup table
+    + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities) and measured velocity
+
+
+* `04_get_cross_section_velocities.R:` Calculate the water velocity for 5 locations (5 locations with Q-data and cross section data)
+
+    For each location:
+    + `\src\get_velocity_function.R:` Making use of waterlevel, discharge and H-A relations (save the data at `/interim`)
+
+
+* `05_link_env_variables.R:` linking the environmental variables with the telemetry raw data
     
     For each type of environmental data (upload `./data/interim/migration_filter.csv` and save to `./data/interim/migration_env_filter.csv`):
 
@@ -98,10 +98,10 @@ Data preprocessing
             - Q is scaled before inverse distance is applied (to correct for increasing discharge more downstream)
         - 2D (Rainfall): involve all datapoints
 
-* `/data_preprocessing/Smoothing_interpolation.R:` (load `/interim/migration_env_filter.csv`)
+* `06_Smoothing_interpolation.R:` (load `/interim/migration_env_filter.csv`)
     + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv` (now: resolution = 15 min)
 
-* `/data_preprocessing/link_env_variables_inter.R:` linking the environmental variables with the telemetry interpolated data (R becomes the accumulated data)
+* `07_link_env_variables_inter.R:` linking the environmental variables with the telemetry interpolated data (R becomes the accumulated data)
 
     + Interpolated telemetry data is created in `Smoothing_interpolation.R` (load `/interim/migration_inter.csv`)
     + Here for all environmental data:
@@ -112,7 +112,7 @@ Data preprocessing
 
 
 Analysis
-* `/analysis/Clustering.R:` Clustering (resting + resident) Vs migratory (add column to `/interim/migration__env_filter.csv`)
+* `01_clustering.R:` Clustering (resting + resident) Vs migratory (add column to `/interim/migration__env_filter.csv`)
     + kmeans (different options were tested BUT log raw data, seperate eels and k=2 works best!)
     + working with interpolated data --> even more skewed data (in the other direction)
     + silhouette width method + biological knowledge --> $k = 2$
@@ -120,12 +120,12 @@ Analysis
     + first value is NA (for each eel)
     + 1 = resident, 2 = migration
 
-* `/analysis/onset_migration.R:` Resident Vs migration: Is there a difference in environmental variables? Are there short-term triggers to onset migration?
+* `02_onset_migration.R:` Resident Vs migration: Is there a difference in environmental variables? Are there short-term triggers to onset migration?
     + data selection: non-tidal, remove the first day after release
         - add column: label --> 'resident' and 'migration' and later for the model: label_bin --> 0 = resident and 1 = migration
     + Boxplot to see difference in conditions
     + Boxplots to see triggers
-* `/analysis/during_migration.R:`
+* `03_during_migration.R:`
     + add column: label --> 'migratory' and 'resting' and later for the model: label_bin --> 0 = migratory and 1 = resting
 
 
@@ -141,10 +141,3 @@ Explorative
         - between an environmental variable and the migration speed
         - between the environmental variables 
     + `Figures_for_presentations.R:` Additional figures for presenations
-
-### Figures
-* `/Trajectory_linked_env_var:`
-* `/Trajectory:`
-* `/Clustering:`
-* `/correlations:`
-    + `ggpairs_inter_5min`: environmental variables compared (on data_inter_env)
