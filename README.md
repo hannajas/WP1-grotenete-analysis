@@ -36,12 +36,12 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 	+ `distancematrix_2019_grotenete.csv`: distance matrix of the detection station network (matrices are created at https://github.com/inbo/fish-tracking).
     + `/cross_section_H_A`: height area relations for five cross-sections in the study area
 
-### /Scripts
-General parameters
+### Scripts
 * `config.R`: Store useful variables and configuration
+* `main.R`
 
 Data download
-* `/data_download/wateRinfo.R:` Making use of the wateRinfo package and save the data at `/raw` (timezone = UCT)
+* `wateRinfo.R:` Making use of the wateRinfo package and save the data at `/raw` (timezone = UCT)
 
 Data preprocessing
 * `01_switch_2D_1D.R:`:
@@ -70,13 +70,14 @@ Data preprocessing
     + `\chemical_var.R:` preprocessing of salinity, turbidity and dissolved oxygen
     + `\discharge.R:` preprocessing of discharge
     + `\rainfall.R:` preprocessing of rainfall. Later in the analysis the accumulated rainfall will be used (release time as startingpoint)
-    + `\Watertemperature.R`: preprocessing of watertemperature (+ looking at correlations between measurements)
-    + `\Circadian.R:` arrival/departure analysis + chi-squared test
-    + `\Tides.R:` arrival/departure analysis. ebb/flood at receiver was decided based on closest measuring point
-    + `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
+    + `\watertemperature.R`: preprocessing of watertemperature (+ looking at correlations between measurements)
+    + `\circadian.R:` arrival/departure analysis + chi-squared test
+    + `\tides.R:` arrival/departure analysis. ebb/flood at receiver was decided based on closest measuring point
     + `\metadata.R:`: processing metadata
         - e.g calculated distance to source based on lookup table
     + `\velocity.R:`: evaluating the calculated velocities (from cross_sections/get_velocities) and measured velocity
+    + `\lunar_cycle.R`
+    + `\photoperiod.R`    
 
 
 * `04_get_cross_section_velocities.R:` Calculate the water velocity for 5 locations (5 locations with Q-data and cross section data)
@@ -130,6 +131,7 @@ Analysis
 
 
 Explorative
+* `\comp_env_distr.R:` compare the distributions of environmental data with the sample distributions (samples = environmental values at arrivals and departures)
 * `Smoothing.R:` experimenting with crawl and dbscan
 * `BCPA.R:`Behavioural change point analysis
 * `trajectory_analysis.R:` Lavielle and GUEGUEN analysis
