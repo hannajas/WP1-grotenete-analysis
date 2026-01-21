@@ -23,7 +23,7 @@ get_velocity <- function(Q_station_name, H_station_name, metadata) {
   #assign(paste(Q_station_name,'_Q', sep =""), temp)
 
   path <- paste(
-    'C:/Code/WP1-grotenete-analysis/data/external/cross_section_area/',
+    'C:/Code/WP1-grotenete-analysis/data/external/cross_section_H_A/',
     H_station_name,
     '.csv',
     sep = ""
