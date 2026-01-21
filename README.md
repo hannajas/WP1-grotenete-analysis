@@ -1,4 +1,5 @@
 # WP1 - Grote Nete Analysis
+<mark>Data last updated on 21-01-2026</mark>
 
 ## About
 Linking the eel tracking dataset in the River Grote Nete with environmental variables. This river has an unobstructed water flow with a continuous transition from river to estuary and sea.
@@ -8,7 +9,6 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 ## Project structure
 
 ### Data
-<mark>Data last updated on 21-01-2026</mark>
 
 * `/raw:`
 	+ `migration.csv`: dataset containing eel tracks and speed
