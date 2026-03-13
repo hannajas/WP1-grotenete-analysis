@@ -218,7 +218,7 @@ p2 <- ggplot(data_eels_lunar, aes(x = days_since_last_full)) + #hier hoever van 
     expand = c(0, 0)
   ) +
   scale_fill_manual(
-    name = "Lunar cycle",
+    name = "Lunar cycle:",
     values = c("new_moon_period" = grey1, "full_moon_period" = grey2),
     labels = c(
       "new_moon_period" = "near new moon",
@@ -233,7 +233,7 @@ p2 <- ggplot(data_eels_lunar, aes(x = days_since_last_full)) + #hier hoever van 
     panel.grid.major = element_line(colour = "grey90"),
     axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1)
   ) +
-  labs(y = element_blank(), x = "days after full moon") +
+  labs(y = element_blank(), x = "Days after full moon") +
   annotate(
     "text",
     x = 30, # place at "north" outer edge
@@ -246,7 +246,7 @@ p2 <- ggplot(data_eels_lunar, aes(x = days_since_last_full)) + #hier hoever van 
   ) #+
 # facet_wrap(~zone)
 print(p2)
-ggsave("./figures/lunar/lunar_cycle_detections_bw.png", height = 7, width = 7)
+ggsave("./figures/lunar/lunar_cycle_detections_bw.png", height = 7, width = 8)
 
 test <- data_eels_lunar %>%
   filter(

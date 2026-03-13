@@ -52,11 +52,15 @@ plot_one_traj <- function(mydfnew.temp, variable) {
       size = 3
     ) +
     theme(legend.position = "bottom")
-  g2 <- ggplot(mydfnew.temp, aes(date, .data[[variable]])) +
-    thema +
-    geom_point() +
-    geom_line(linewidth = 0.5, linetype = "dashed") +
-    labs(x = "Date", y = variable) +
-    scale_x_datetime(date_breaks = "1 week")
-  return(list(g = g, g2 = g2))
+  if (variable == "none") {
+    return(g)
+  } else {
+    g2 <- ggplot(mydfnew.temp, aes(date, .data[[variable]])) +
+      thema +
+      geom_point() +
+      geom_line(linewidth = 0.5, linetype = "dashed") +
+      labs(x = "Date", y = variable) +
+      scale_x_datetime(date_breaks = "1 week")
+    return(list(g = g, g2 = g2))
+  }
 }

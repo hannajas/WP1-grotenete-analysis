@@ -119,9 +119,9 @@ walk2(grid$period, grid$event, function(p, e) {
     circadian[[paste0("w_", p)]][circadian$date == floor_date(x, "day")]
   })
 })
-#write.csv(data_eels, './data/interim/migration_circadian.csv', row.names = FALSE)
-data_eels <- read_csv('./data/interim/migration_circadian.csv') %>%
-  filter(!startsWith(station_name, "rel"))
+# write.csv(data_eels, './data/interim/migration_circadian.csv', row.names = FALSE)
+# data_eels <- read_csv('./data/interim/migration_circadian.csv') %>%
+#   filter(!startsWith(station_name, "rel"))
 
 # plot the arrivals
 colorscheme <- c(
@@ -135,8 +135,8 @@ p2 <- ggplot(data_eels, aes(x = hour(departure))) +
   scale_fill_manual(values = colorscheme, na.value = "grey60") +
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
   labs(
-    fill = "Circadian phase",
-    x = "hour of departure",
+    fill = "Circadian phase:",
+    x = "Hour of departure",
     y = "# observations"
   ) +
   style +
@@ -158,7 +158,7 @@ p2 <- ggplot(data_eels, aes(x = hour(departure))) +
 
 #print(p1 / p2)
 print(p2)
-#ggsave("./figures/Circadian/circadian_tidal_dep_bw.png", width = 12, height = 6)
+ggsave("./figures/Circadian/circadian_tidal_dep_bw.png", width = 12, height = 6)
 # meeste arrivals en departures tussen 18u en 21u
 
 # compare the proportions of arrivals and departures in the different phases

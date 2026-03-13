@@ -10,6 +10,10 @@ source("./data_download/wateRinfo.R")
 source("./config.R")
 
 # --------------------------------------------------------------------------------------------
+#load some functions  ------------------------------------------------------------------
+source("./src/pdf_trajectory.R")
+
+# --------------------------------------------------------------------------------------------
 #data preprocessing  -------------------------------------------------------------------------
 source("./data_preprocessing/01_switch_2D_1D.R")
 source("./data_preprocessing/02_preprocessing_INBO_data.R")

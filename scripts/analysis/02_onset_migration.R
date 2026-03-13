@@ -24,25 +24,25 @@ true_scale <- TRUE
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
 #interpolated
-data_raw <- read.csv(
-  "./data/interim/migration_env_inter.csv",
-  header = TRUE,
-  sep = ","
-) %>%
-  mutate(
-    arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
-    departure = ymd_hms(departure, tz = "UTC", truncated = 3),
-    date = ymd_hms(date, tz = "UTC", truncated = 3)
-  ) %>%
-  group_by(tag_serial_number) %>%
-  filter(date > date[[1]] + days(1))
+# data_raw <- read.csv(
+#   "./data/interim/migration_env_inter.csv",
+#   header = TRUE,
+#   sep = ","
+# ) %>%
+#   mutate(
+#     arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
+#     departure = ymd_hms(departure, tz = "UTC", truncated = 3),
+#     date = ymd_hms(date, tz = "UTC", truncated = 3)
+#   ) %>%
+#   group_by(tag_serial_number) %>%
+#   filter(date > date[[1]] + days(1))
 
 #raw
-# data_raw <- read_csv(
-#   './data/interim/migration_env_filter.csv',
-#   show_col_types = FALSE
-# ) %>%
-#   group_by(tag_serial_number) #%>%
+data_raw <- read_csv(
+  './data/interim/migration_env_filter.csv',
+  show_col_types = FALSE
+) %>%
+  group_by(tag_serial_number) #%>%
 
 ##filter(arrival > arrival[[1]] + days(1)) #DIT WERKT NIET! zo valt het eerste
 #datapunt volledig weg (dit is veel meer dan 1 dag dat je wegsmeet!!)
@@ -148,7 +148,7 @@ data_env %>%
   )
 
 variables <- c(
-  "speed_m_s",
+  #"speed_m_s",
   "Q",
   #"Q_an",
   #"delta_Q",#DELTA zegt niets bij raw data (delta over versch tijdspannes)
@@ -213,13 +213,14 @@ p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose th
     axis.title.x = element_blank(),
     axis.text.x = element_blank(),
     strip.text = element_text(size = 20),
-    legend.position = "bottom"
+    legend.position = "bottom",
+    legend.title = element_blank()
   ) +
-  windows(width = 16, height = 5)
+  windows(width = 16, height = 6)#was 5
 plot(p)
-ggsave(
-  "./figures/Clustering/boxplot_labelled_non_tidal_Qscaled.png"
-)
+# ggsave(
+#   "./figures/Clustering/boxplot_labelled_non_tidal_Qscaled.png"
+# )
 
 ######################################################
 # Short-term trigger - INTERPOLATED DATA
@@ -290,15 +291,16 @@ g <- ggplot(data = dataplot) +
   ) +
   facet_wrap(~tag_serial_number) +
   style + #other text on y axis, no x values in x  axis
-  theme(axis.text.x = element_blank()) +
+  theme(axis.text.x = element_blank(),
+  panel.grid.major = element_blank()) +
   labs(y = "Discharge (m³/s)", x = "Eel ID")
 plot(g)
-# ggsave(
-#   "./figures/onset_of_migration/as_trigger/Q_rangemmax_1day_delday1.png",
-#   plot = g,
-#   width = 14,
-#   height = 14
-# )
+ggsave(
+  "./figures/onset_of_migration/as_trigger/Q_rangemmax_1day_delday1.png",
+  plot = g,
+  width = 14,
+  height = 16
+)
 
 #plot Q_trigger
 # p <- ggplot() +

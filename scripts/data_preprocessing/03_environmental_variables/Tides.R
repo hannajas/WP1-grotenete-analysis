@@ -186,14 +186,14 @@ p1 <- ggplot(data_filter_tij, aes(x = hour(tidetime_arr))) + #hier hoever van ho
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
   labs(title = "Arrivals at receicers") +
   theme(legend.position = "none") + #axis.title.x = element_text(size = 16)
-  xlab("hours after high water")
+  xlab("Hours after high water")
 
 p2 <- ggplot(data_filter_tij, aes(x = hour(tidetime_dep))) + #hier hoever van hoog en laag tij
   geom_bar(aes(fill = tide_departure)) + #choose colors for fill
 
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
   scale_x_continuous(limits = c(0, 12), breaks = 0:12, expand = c(0, 0)) +
-  labs(fill = "Tide", y = element_blank(), x = "hours after high water") +
+  labs(fill = "Tide:", y = element_blank(), x = "Hours after high water") +
   scale_fill_manual(values = c("ebb" = grey1, "flood" = grey2)) +
   style +
   theme(

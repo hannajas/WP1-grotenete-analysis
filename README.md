@@ -37,8 +37,8 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
     + `/cross_section_H_A`: height area relations for five cross-sections in the study area
 
 ### Scripts
-* `config.R`: Store useful variables and configuration
-* `main.R`
+Run scripts in the following order or alternatively run `main.R` for the full pipeline. * `config.R`: Store useful variables and configuration
+
 
 Data download
 * `wateRinfo.R:` Making use of the wateRinfo package and save the data at `/raw` (timezone = UCT)

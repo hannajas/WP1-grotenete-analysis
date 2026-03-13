@@ -1,3 +1,5 @@
+# figure settings -------------------------------------------------------------------------
+#style
 style <- theme(
   axis.line = element_line(colour = "black"),
   axis.text.x = element_text(size = 30, colour = "black", angle = 90),
@@ -10,8 +12,7 @@ style <- theme(
   panel.background = element_blank(),
   panel.grid.major = element_line(colour = "grey90")
 )
-
 #colours
-grey2 <-"#505050"
+grey2 <- "#505050"
 grey1 <- "#979797"
 grey3 <- "#d4d4d4"
