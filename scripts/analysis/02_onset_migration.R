@@ -216,7 +216,7 @@ p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose th
     legend.position = "bottom",
     legend.title = element_blank()
   ) +
-  windows(width = 16, height = 6)#was 5
+  windows(width = 16, height = 6) #was 5
 plot(p)
 # ggsave(
 #   "./figures/Clustering/boxplot_labelled_non_tidal_Qscaled.png"
@@ -291,8 +291,7 @@ g <- ggplot(data = dataplot) +
   ) +
   facet_wrap(~tag_serial_number) +
   style + #other text on y axis, no x values in x  axis
-  theme(axis.text.x = element_blank(),
-  panel.grid.major = element_blank()) +
+  theme(axis.text.x = element_blank(), panel.grid.major = element_blank()) +
   labs(y = "Discharge (m³/s)", x = "Eel ID")
 plot(g)
 ggsave(
@@ -536,6 +535,10 @@ summary(first_mod_glm)
 
 #glmm
 mc_size <- 10^5
+#monte carlo size large enough?
+#checking that the MC se are way smaller than the se of the coeffiecient estimates
+#se(mod_tag) vs mcse(mod_tag)
+#10^3 NOT LARGE ENOUGH
 clust <- makeCluster(4) #clusterise to decrease runtime
 mixed <- "tag_serial_number" #list("tag_serial_number", "year")
 
@@ -554,16 +557,10 @@ mod_tag <- glmer(
   data = data_env,
   family = binomial(link = "cloglog"),
   control = glmerControl(optimizer = "bobyqa"),
-  nAGQ = 500,
+  nAGQ = 10,
   #contrasts = list(departure_circadian = "contr.sum")
 )
 summary(mod_tag)
-simRes <- simulateResiduals(fittedModel = mod_tag, n = 10000) # n as desired
-plot(simRes)
-time_num <- as.numeric(data_env$arrival) # or data_env$time (numeric index)
-DHARMa::testTemporalAutocorrelation(simRes, time = time_num, plot = TRUE)
-#plot in function of arrival
-plot()
 ######################################################
 #WITH AUTOCORRELATION
 data_env <- data_env %>%
@@ -597,29 +594,39 @@ summary(glmmTMB_mod)
 ######################################################
 #check assumptions
 
-#E(epsilon) = 0?
-png("./figures/onset_of_migration/gl(m)m/glm_residuals.png")
-g <- plot(first_mod_glm$fitted.values, first_mod_glm$residuals) +
-  abline(h = 0, col = "red") +
-  lines(
-    loess.smooth(first_mod_glm$fitted.values, first_mod_glm$residuals),
-    col = "blue",
-    lwd = 2
-  )
-dev.off()
+#Is singular?
+isSingular(mod_tag, tol = 1e-4) #OK
 
-g <- plot(first_mod$fitted.values, first_mod$residuals) +
-  abline(h = 0, col = "red") +
-  lines(
-    loess.smooth(first_mod$fitted.values, first_mod$residuals),
-    col = "blue",
-    lwd = 2
-  )
+#iNDEPENDENCE OF OBSERVATIONS (conditional on random effects)
+#Use simulated residuals to check assumptions
+library(DHARMa)
 
-#monte carlo size large enough?
-#checking that the MC se are way smaller than the se of the coeffiecient estimates
-#se(mod_tag) vs mcse(mod_tag)
-#10^3 NOT LARGE ENOUGH
+sim <- simulateResiduals(fittedModel = mod_tag, n = 10000)
+plot(sim) # overall diagnostics
+testUniformity(sim) # residual distribution
+testDispersion(sim) # over/underdispersion
+testZeroInflation(sim)
+testOutliers(sim) #no outliers
+
+# Test autocorrelation
+time_num <- as.numeric(data_env$arrival)
+DHARMa::testTemporalAutocorrelation(
+  sim,
+  time = as.numeric(data_env$arrival),
+  plot = TRUE
+)
+# OK
+
+#RANDOM EFFECTS NORMALITY CHECK
+ranef_mod <- ranef(mod_tag, condVar = TRUE)
+qqnorm(ranef_mod$tag_serial_number[, 1], main = "Q-Q Plot of Random Effects")
+qqline(ranef_mod$tag_serial_number[, 1], col = "red") #ok
+
+
+# Check collinearity along fixed effects
+library(performance)
+check_collinearity(mod_tag)
+#OK
 
 #################################################################################
 #Check performance
