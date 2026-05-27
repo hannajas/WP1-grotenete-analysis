@@ -6,7 +6,7 @@
 
 library(wateRinfo)
 library(tidyverse)
-library(rvest)
+#library(rvest)
 library(sf)
 # source function
 source("./src/add_segments_function.R")
@@ -65,6 +65,16 @@ metadata_sf <- st_as_sf(
   coords = c("xcoord", "ycoord"),
   crs = 31370
 )
+metadata_sf_full <- st_as_sf(
+  metadata,
+  coords = c("xcoord", "ycoord"),
+  crs = 31370,
+  na.fail = FALSE
+)
+#set to other crs
+lat_log <- metadata_sf_full %>% st_transform(metadata_sf, crs = 4326) %>% 
+  st_coordinates()
+
 lookup_sf <- st_as_sf(
   lookup,
   coords = c("xcoord", "ycoord"),
@@ -86,5 +96,10 @@ metadata$distance[
 ##############################################################################################
 #Add segments
 metadata$segment <- add_segments(lookup, metadata, "distance_to_source")
+
+##############################################################################################
+#add latitude and longitude (NA values shuold be the original values in metadata and not the NA in lat_log)
+metadata$station_longitude <- ifelse(is.na(metadata$station_longitude), lat_log[, 1], metadata$station_longitude)
+metadata$station_latitude <- ifelse(is.na(metadata$station_latitude), lat_log[, 2], metadata$station_latitude)
 
 write.csv(metadata, './data/interim/metadata.csv')

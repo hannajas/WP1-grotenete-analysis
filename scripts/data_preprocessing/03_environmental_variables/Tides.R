@@ -193,8 +193,8 @@ p2 <- ggplot(data_filter_tij, aes(x = hour(tidetime_dep))) + #hier hoever van ho
 
   coord_radial(r.axis.inside = TRUE, expand = FALSE) +
   scale_x_continuous(limits = c(0, 12), breaks = 0:12, expand = c(0, 0)) +
-  labs(fill = "Tide:", y = element_blank(), x = "Hours after high water") +
-  scale_fill_manual(values = c("ebb" = grey1, "flood" = grey2)) +
+  labs(fill = "Tide:", y = NULL, x = "Hours after high water") +
+  scale_fill_manual(values = c("ebb" = grey1, "flood" = "black")) +
   style +
   theme(
     #axis.line = element_blank(),

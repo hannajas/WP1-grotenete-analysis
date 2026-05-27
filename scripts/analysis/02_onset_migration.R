@@ -1,9 +1,4 @@
-library(tidyverse)
-library(dplyr)
 library(geosphere)
-library(ggplot2)
-library(themis) #package to deal with unbalanced data
-library(lubridate)
 library(lme4)
 library(glmmTMB)
 library(DHARMa)
@@ -12,18 +7,12 @@ library(activity)
 ########################################################
 #make selection in the data
 ########################################################
-#non-tidal
-#delete day one
-#fill 'resident' and 'migration'
-#leave out the eels without onset (1294169, 1305785)
-#leave out eels with only one detection (1171747, 1171751, 1294168, 1294172)
-# fix variables
 true_scale <- TRUE
 
 # load and process data
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
-#interpolated
+#INTERPOLATED DATA
 # data_raw <- read.csv(
 #   "./data/interim/migration_env_inter.csv",
 #   header = TRUE,
@@ -37,19 +26,17 @@ metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 #   group_by(tag_serial_number) %>%
 #   filter(date > date[[1]] + days(1))
 
-#raw
+#RAW DATA
 data_raw <- read_csv(
   './data/interim/migration_env_filter.csv',
   show_col_types = FALSE
 ) %>%
-  group_by(tag_serial_number) #%>%
-
-##filter(arrival > arrival[[1]] + days(1)) #DIT WERKT NIET! zo valt het eerste
-#datapunt volledig weg (dit is veel meer dan 1 dag dat je wegsmeet!!)
+  group_by(tag_serial_number)
 
 #als dat a temp een kolom data bevat
-no_detections <- c(1171747, 1171751, 1294168, 1294172)
+no_detections <- c(1171747, 1171751, 1294168, 1294172) #leave out eels with only one detection
 no_onset <- c(
+  #leave out the eels without onset
   1294169,
   1305785,
   1293822,
@@ -63,7 +50,7 @@ no_onset <- c(
   1305791
 ) #1305791 never migratory, rest never resident
 data_env <- data_raw %>%
-  filter(zone == "non-tidal") %>% #| zone == "transition") %>%
+  filter(zone == "non-tidal") %>% #| zone == "transition") %>%#only non-tidal
   filter(
     !tag_serial_number %in%
       c(no_onset, no_detections)
@@ -88,6 +75,7 @@ data_env <- data_raw %>%
   #   )
   # ) %>%
   mutate(
+    #fill 'resident' and 'migration'
     label = ifelse(
       cluster == 1,
       "resident/resting",
@@ -178,19 +166,16 @@ data_env_long <- data_env %>%
       levels = variables
     )
   )
-# y_labels <- c(
-#   speed_m_s = "Eel speed (m/s)",
-#   photoperiod = "Photoperiod (min)",
-#   Tw = desparse(bquote(~(T_w)"(°C)")),
-#   Tw_an = "Temperature anomaly (°C)",
-#   Q = "Discharge (-)",
-#   Q_an = "Discharge anomaly (m³/s)",
-#   V = "Velocity (m/s)",
-#   R = "Rainfall (mm)"
-# )
+
 p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose the colors
   scale_fill_manual(values = c("resident" = grey1, "migration" = "white")) +
-  geom_boxplot(position = "dodge") +
+  geom_boxplot(position = "dodge") + #add jitter
+  # geom_jitter(
+  #   position = position_jitter(width = 0.2, height = 0),
+  #   alpha = 0.2,
+  #   size = 2,
+  #   contour.color = "black",
+  # ) +
   facet_wrap(
     ~variable,
     nrow = 1,
@@ -225,20 +210,20 @@ plot(p)
 ######################################################
 # Short-term trigger - INTERPOLATED DATA
 ######################################################
-#making use of interpolated telemetry dataset (its about the Q the eel experieces)
+#USE INTERPOLATE DATA (uncommnent line 16-27)
 variable <- "Q" #Tw?R?
 delta_variable <- "delta_Q" #delta_Tw? delta_R?
 
-list <- split(data_env, data_env$tag_serial_number) # lijst van alle eels
-# identificeer het eerste knikpunt (tijdstip t_k) op plaats x_k ("migratory for the first time")
+list <- split(data_env, data_env$tag_serial_number) # list of all eels
+# identify the first breakpoint (time point t_k) at location x_k (migratory for the first time)
 #empty dataframe
 datatemp <- data.frame()
-# identificeer een range [t_k - r; t_k]
+# identify range [t_k - r; t_k]
 range <- as.period(1, "days")
 
 for (i in 1:length(list)) {
-  data_eel <- list[[i]] # neem de eerste eel
-  # identificeer het eerste knikpunt (tijdstip t_k)
+  data_eel <- list[[i]] # select one eel
+  # identify the first breakpoint (time point t_k) at location x_k (migratory for the first time)
   #t_k <- data_eel$date[data_eel$first_migratory_idx[1]]
   t_k <- data_eel$date[which(data_eel$label == "migration")[1]]
   if (is.na(t_k)) {
@@ -270,7 +255,7 @@ for (i in 1:length(list)) {
       rep("trigger", length(Q_trigger))
     )
   )
-  #marge with datatemp
+  #merge with datatemp
   datatemp <- rbind(datatemp, data_plot)
 }
 
@@ -313,7 +298,7 @@ ggsave(
 #   theme_minimal()
 
 ######################################################
-# Time of onset (MET ruwe data)
+# Time of onset (WITH RAW DATA)
 ######################################################
 # data_onset <- data %>%
 #   group_by(tag_serial_number) %>%
@@ -366,9 +351,6 @@ ggsave(
 ############################################################################################################
 # GLMM Conditions
 # How are the environmental conditions different from an eel that started migration VS an eel still resident
-# Is already in the question timing and place is partly what divides the classes
-# Miss is GLMM daarom nietzoveel zeggend?
-#gaan we er nietvanuit (expert knoledge dat er )
 ############################################################################################################
 library(glmm)
 set.seed(1234)
@@ -415,8 +397,6 @@ data_env <- data %>%
 #Is the data skewed?
 skew_table <- table(data_env$label)
 
-table(data_balanced$label)
-
 #Is the data correlated
 #correlogram
 cols <- as.factor(data_env$label)
@@ -437,169 +417,26 @@ cor_mat <- data_env %>%
 ggplot(data_env, aes(x = V, y = Tw, color = label)) +
   geom_point()
 
-
-######################################################
-# RANDOM UNDERSAMPLING
-min_n <- min(skew_table)
-data_balanced <- data_env %>%
-  group_by(label) %>%
-  slice_sample(n = min_n, replace = FALSE) %>%
-  ungroup()
-
-#correlogram balanced
-pairs(
-  data_balanced %>% dplyr::select(Tw, Q, V, photoperiod, R),
-  col = adjustcolor(col_vec, alpha.f = 0.5),
-  pch = 22
-)
-
-#correlation matrix
-cor_mat <- data_balanced %>%
-  dplyr::select(Tw, Q, V, photoperiod, R) %>%
-  cor(use = "pairwise.complete.obs")
-#STILL HIGHLY correlation
-#Enkel nog Tw en Q houden???
-
-#SMOTE (OVERSAMPLING)
-arrival_circadian_fac <- relevel(
-  as.factor(data_env$arrival_circadian),
-  ref = "night"
-)
-orig_levels <- levels(arrival_circadian_fac)
-year_fac <- as.factor(data_env$year)
-orig_year_levels <- levels(year_fac)
-tag_serial_number_fac <- as.factor(data_env$tag_serial_number)
-orig_tag_levels <- levels(tag_serial_number_fac)
-
-data_env_t <- data_env %>%
-  select(
-    label_bin,
-    Tw,
-    Q,
-    V,
-    photoperiod,
-    R,
-    tag_serial_number,
-    year,
-    arrival_circadian
-  ) %>%
-  mutate(
-    label_bin = factor(
-      label_bin,
-      levels = c(0, 1),
-      labels = c("resident", "migration")
-    ),
-    tag_serial_number = as.numeric(tag_serial_number),
-    year = as.numeric(year),
-    arrival_circadian = as.numeric(arrival_circadian_fac)
-  )
-data_balanced <- themis::smote(data_env_t, "label_bin", over_ratio = 1) %>%
-  mutate(
-    tag_serial_number = factor(
-      orig_tag_levels[tag_serial_number],
-      levels = orig_tag_levels
-    ),
-    year = factor(
-      orig_year_levels[as.numeric(year)],
-      levels = orig_year_levels
-    ),
-    arrival_circadian = as.character(factor(
-      orig_levels[arrival_circadian],
-      levels = orig_levels
-    )),
-    label_bin = as.numeric(recode(label_bin, "resident" = 0, "migration" = 1))
-  )
-
-#correlogram balanced
-pairs(
-  data_balanced %>% dplyr::select(Tw, Q, V, photoperiod, R),
-  col = adjustcolor(col_vec, alpha.f = 0.5),
-  pch = 22
-)
-
-#correlation matrix
-cor_mat <- data_balanced %>%
-  dplyr::select(Tw, Q, V, photoperiod, R) %>%
-  cor(use = "pairwise.complete.obs")
-
 ######################################################
 # Build model
-
-#glm
-first_mod_glm <- glm(
-  label_bin ~ Tw_an + Q_an + R + photoperiod,
-  data = data_env,
-  family = binomial(link = "cloglog")
-)
-summary(first_mod_glm)
-
 #glmm
-mc_size <- 10^5
-#monte carlo size large enough?
-#checking that the MC se are way smaller than the se of the coeffiecient estimates
-#se(mod_tag) vs mcse(mod_tag)
-#10^3 NOT LARGE ENOUGH
-clust <- makeCluster(4) #clusterise to decrease runtime
-mixed <- "tag_serial_number" #list("tag_serial_number", "year")
-
-mod_tag <- glmm(
-  label_bin ~ Tw + Q + V + arrival_circadian + R,
-  ~ 0 + tag_serial_number,
-  varcomps.names = mixed,
-  data = data_balanced,
-  family = bernoulli.glmm,
-  m = mc_size,
-  cluster = clust
-)
-
 mod_tag <- glmer(
-  label_bin ~ Q_an + R + Tw_an + photoperiod + (1 | tag_serial_number),
+  label_bin ~ Q_an + photoperiod + (1 | tag_serial_number) + R,
   data = data_env,
   family = binomial(link = "cloglog"),
   control = glmerControl(optimizer = "bobyqa"),
-  nAGQ = 10,
-  #contrasts = list(departure_circadian = "contr.sum")
+  nAGQ = 90
 )
 summary(mod_tag)
-######################################################
-#WITH AUTOCORRELATION
-data_env <- data_env %>%
-  arrange(tag_serial_number, arrival) %>%
-  group_by(tag_serial_number) %>%
-  mutate(
-    time_numeric = as.numeric(
-      arrival %--% lag(departure),
-      # optional: integer index (e.g. 15-min bins) if you prefer discrete occasions
-      time_index = as.integer(round(time_numeric / (15 * 60))),
-      timef = factor(time_index)
-    )
-  ) %>%
-  ungroup() %>%
-  mutate(tag_serial_number = factor(tag_serial_number))
-
-
-glmmTMB_mod <- glmmTMB(
-  label_bin ~ Q_an +
-    Tw_an +
-    photoperiod +
-    R +
-    ar1(time + 0 | tag_serial_number),
-  data = data_env,
-  family = binomial(link = "cloglog"),
-  control = glmmTMBControl(optimizer = "nlminb", optCtrl = list(iter.max = 1e5))
-)
-summary(glmmTMB_mod)
-
 
 ######################################################
 #check assumptions
 
 #Is singular?
-isSingular(mod_tag, tol = 1e-4) #OK
+isSingular(mod_tag, tol = 1e-4) #FALSE =OK
 
 #iNDEPENDENCE OF OBSERVATIONS (conditional on random effects)
 #Use simulated residuals to check assumptions
-library(DHARMa)
 
 sim <- simulateResiduals(fittedModel = mod_tag, n = 10000)
 plot(sim) # overall diagnostics
@@ -654,174 +491,4 @@ vc <- as.data.frame(VarCorr(mod_tag))
 group_var <- vc$vcov[vc$grp == "tag_serial_number"]
 latent_resid_var <- pi^2 / 3 #costanct value: Nakagawa & Schielzeth (2013, 2017)
 icc_latent <- group_var / (group_var + latent_resid_var)
-
-
-##################################################################################
-#Discussion
-
-# weird values for Tw and Q?
-#Alles op een hoop --> meer migratory datapoints bij lage Tw
-#MAAR houd bv. Q constant --> bij stijging in Tw minder
-# OPMERKELIJK!
-# HET COMBINEREN VAN VARIABELEN GEEFT EEN OMGEKEERDE RELATIE MET T_W
-# HOGERE WAARDEN VAN T_W LEIDEN TOT EEN HOGERE KANS OP MIGRATIE
-# Zet Q vast --> verhoog Tw --> migratiekans stijgt
-
-#plot Tw and circadian oncircular plot
-Time_min <- min(data$arrival)
-Time_max <- max(data$departure)
-All_arrival_days <- unique(round(data$arrival, units = "days"))
-L10_077_Tw <- read_csv(
-  './data/interim/processed/L10_077_Tw.csv',
-  show_col_types = FALSE
-) %>%
-  filter(round(Timestamp, units = "days") %in% All_arrival_days) %>%
-  mutate(
-    hour_arrival = factor(hour(Timestamp), levels = as.character(0:23)),
-    day_arrival = factor(round(Timestamp, units = "days"))
-  ) %>%
-  group_by(day_arrival) %>%
-  mutate(T_scale = Value - mean(Value, na.rm = TRUE)) %>%
-  ungroup()
-
-
-data <- data %>%
-  mutate(hour_arrival = factor(hour(arrival), levels = as.character(0:23))) %>%
-  filter(!is.na(cluster))
-
-p <- ggplot() +
-  geom_bar(data = data, aes(fill = arrival_circadian, x = hour_arrival)) + #aes(fill = arrival_circadian)
-  geom_boxplot(
-    data = L10_077_Tw,
-    aes(y = T_scale * 9 + 20, x = hour_arrival),
-    fill = NA,
-    color = "#544545",
-    width = 0.7
-  ) +
-  coord_radial(r.axis.inside = TRUE, expand = FALSE, direction = 1) +
-  theme(
-    #axis.title.y = element_text(size = 30),
-    axis.text.r = element_text(size = 27, color = "black"),
-    #axis.text.y = element_text(size = 27, color = "black"),
-    axis.text.y.right = element_text(size = 27, color = "#544545")
-  ) +
-  style +
-  guides(
-    fill = guide_legend(title = "Circadian phase"),
-    r.sec = guide_axis(
-      theme = theme(axis.text.r = element_text(colour = "#544545"))
-    )
-  ) +
-  scale_y_continuous(
-    sec.axis = sec_axis(
-      ~ (. - 20) / 9,
-      name = "Tw (°C)"
-    ),
-    name = "# eels"
-  ) +
-  scale_x_discrete(drop = FALSE)
-plot(p)
-ggsave(
-  "./figures/Circadian/circadian_non_tidal_TW.png",
-  width = 10,
-  height = 10
-)
-
-######################################################
-# GLMM Trigger
-# How are the environm. conditions different in de starting period of migration VS before?
-######################################################
-# with interpolated data
-range <- as.period(1, "days") #1 day range
-data$trigger <- NA
-data_mod <- data %>%
-  group_by(tag_serial_number) %>%
-  filter(row_number() <= first_migratory_idx[1]) %>%
-  mutate(
-    trigger = ifelse(date > (date[length(date)] - as.duration(range)), 1, 0),
-    tag_serial_number = as.factor(tag_serial_number),
-    Tw = scale(Tw, scale = true_scale),
-    delta_Tw = scale(delta_Tw, scale = true_scale),
-    photoperiod = scale(photoperiod, scale = true_scale),
-    Q = scale(Q, scale = true_scale),
-    delta_Q = scale(delta_Q, scale = true_scale),
-    V = scale(V, scale = true_scale),
-    R = scale(R, scale = true_scale) #1 part of trigger, 0 rest
-  ) %>%
-  ungroup()
-
-L10_077_Tw <- read_csv(
-  './data/interim/processed/L10_077_Tw.csv',
-  show_col_types = FALSE
-) %>%
-  dplyr::select(Timestamp, Value) %>%
-  rename(Tw = Value) %>%
-  mutate(Tw = scale(Tw, scale = true_scale))
-
-L10_077_Q <- read_csv(
-  './data/interim/processed/L10_077_Q.csv',
-  show_col_types = FALSE
-) %>%
-  dplyr::select(Timestamp, Value) %>%
-  rename(Q = Value) %>%
-  mutate(Q = scale(Q, scale = true_scale))
-
-L10_077_V <- read_csv(
-  './data/interim/processed/L10_077_V.csv',
-  show_col_types = FALSE
-) %>%
-  dplyr::select(Timestamp, Value) %>%
-  rename(V = Value) %>%
-  mutate(V = scale(V, scale = true_scale))
-
-data_plot <- data_mod %>%
-  left_join(L10_077_Tw, by = c("date" = "Timestamp"), copy = TRUE) %>%
-  left_join(L10_077_Q, by = c("date" = "Timestamp"), copy = TRUE) %>%
-  left_join(L10_077_V, by = c("date" = "Timestamp"), copy = TRUE)
-
-#glm
-first_mod_glm <- glm(
-  trigger ~ Tw.y + V.y + R + Q.y,
-  data = data_plot,
-  family = binomial
-)
-summary(first_mod_glm)
-
-mod_tag <- glmer(
-  trigger ~ (1 | tag_serial_number) + Q + delta_Q + delta_Tw, #arrival_circadian
-  data = data_mod,
-  family = binomial,
-  control = glmerControl(optimizer = "bobyqa"),
-  #nAGQ = 10,
-  contrasts = list(arrival_circadian = "contr.sum")
-)
-summary(mod_tag)
-
-
-# with raw data
-# resident Vs first migratory point
-data_env <- data_env %>%
-  group_by(tag_serial_number) %>%
-  filter(row_number() <= first_migratory_idx[1]) %>%
-  ungroup() %>%
-  mutate(date = round_date(arrival, unit = "15M 0S"))
-
-data_plot <- data_env %>%
-  left_join(L10_077_Tw, by = c("date" = "Timestamp"), copy = TRUE) %>%
-  left_join(L10_077_Q, by = c("date" = "Timestamp"), copy = TRUE) %>%
-  left_join(L10_077_V, by = c("date" = "Timestamp"), copy = TRUE)
-
-mod_tag <- glmer(
-  label_bin ~ (1 | tag_serial_number) + Q.y, # + R + Tw.y,# + Tw.y + R + arrival_circadian,
-  data = data_plot,
-  family = binomial,
-  control = glmerControl(optimizer = "bobyqa"),
-  nAGQ = 10,
-  contrasts = list(arrival_circadian = "contr.sum")
-)
-summary(mod_tag)
-
-ggplot(data_env) +
-  geom_point(aes(x = V, y = photoperiod))
-
-######################################################################
+icc_latent

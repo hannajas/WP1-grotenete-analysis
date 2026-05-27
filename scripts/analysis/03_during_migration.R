@@ -196,7 +196,7 @@ ggplot(data_env, aes(x = delta_Q, y = delta_Tw, color = label_bin)) +
 ######################################################
 # Built model
 mod_tag <- glmer(
-  label_bin ~ (1 | tag_serial_number) + photoperiod + Tw + Q + R, # arrival_circadian
+  label_bin ~ (1 | tag_serial_number) + Tw + Q + R + photoperiod, # arrival_circadian
   data = data_env,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa"),
@@ -204,23 +204,23 @@ mod_tag <- glmer(
 )
 summary(mod_tag)
 
+#Is singular?
+isSingular(mod_tag, tol = 1e-4) #FALSE =OK
+
+#iNDEPENDENCE OF OBSERVATIONS (conditional on random effects)
+#Use simulated residuals to check assumptions
+
+sim <- simulateResiduals(fittedModel = mod_tag, n = 10000)
+plot(sim) # overall diagnostics
+testUniformity(sim) # residual distribution
+testDispersion(sim) # over/underdispersion
+testZeroInflation(sim)
+testOutliers(sim) #no outliers
+
 simRes <- simulateResiduals(fittedModel = mod_tag, n = 10000) # n as desired
 plot(simRes)
 time_num <- as.numeric(data_env$arrival) # or data_env$time (numeric index)
 DHARMa::testTemporalAutocorrelation(simRes, time = time_num, plot = TRUE)
-
-
-first_mod_glm <- glm(
-  log(speed_m_s) ~ Q + photoperiod + R + Tw, #delta_Tw + delta_Q + R + Tw + photoperiod + V
-  data = data_env
-)
-
-first_mod_glm <- glm(
-  label_bin ~ delta_Q + photoperiod, #delta_Tw + delta_Q + R + Tw + photoperiod + V
-  data = data_env,
-  family = binomial
-)
-summary(first_mod_glm)
 
 pred_probs <- predict(mod_tag, type = "response")
 
