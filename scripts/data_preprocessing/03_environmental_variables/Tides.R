@@ -191,7 +191,7 @@ p1 <- ggplot(data_filter_tij, aes(x = hour(tidetime_arr))) + #hier hoever van ho
 p2 <- ggplot(data_filter_tij, aes(x = hour(tidetime_dep))) + #hier hoever van hoog en laag tij
   geom_bar(aes(fill = tide_departure)) + #choose colors for fill
 
-  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
+  coord_radial(r.axis.inside = TRUE, expand = TRUE, start = pi/2) +
   scale_x_continuous(limits = c(0, 12), breaks = 0:12, expand = c(0, 0)) +
   labs(fill = "Tide:", y = NULL, x = "Hours after high water") +
   scale_fill_manual(values = c("ebb" = grey1, "flood" = "black")) +
@@ -208,7 +208,7 @@ p2 <- ggplot(data_filter_tij, aes(x = hour(tidetime_dep))) + #hier hoever van ho
     x = 12, # place at "north" outer edge
     y = max(table(hour(data_filter_tij$tidetime_dep))) * 0.5, # halfway up radial axis
     label = "# obs",
-    angle = 90, # vertical orientation
+    #angle = 90, # vertical orientation
     hjust = 0.4,
     vjust = 1.4,
     size = 11

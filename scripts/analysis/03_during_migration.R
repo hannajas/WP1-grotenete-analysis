@@ -1,6 +1,3 @@
-library(tidyverse)
-library(dplyr)
-library(ggplot2)
 library(lme4)
 library(DHARMa)
 
@@ -208,20 +205,46 @@ summary(mod_tag)
 isSingular(mod_tag, tol = 1e-4) #FALSE =OK
 
 #iNDEPENDENCE OF OBSERVATIONS (conditional on random effects)
-#Use simulated residuals to check assumptions
+#Use scaled residuals to check assumptions
 
 sim <- simulateResiduals(fittedModel = mod_tag, n = 10000)
-plot(sim) # overall diagnostics
 testUniformity(sim) # residual distribution
 testDispersion(sim) # over/underdispersion
-testZeroInflation(sim)
-testOutliers(sim) #no outliers
+testQuantiles(sim, quantile = c(0.25, 0.5, 0.75)) # outliers
 
-simRes <- simulateResiduals(fittedModel = mod_tag, n = 10000) # n as desired
-plot(simRes)
+# qq plot for is supplementary material
+res <- sim$scaledResiduals
+
+#theoretical and empirical quantiles
+qq_data <- data.frame(
+  theoretical = qunif(ppoints(length(res))),
+  empirical = sort(res)
+)
+
+#plot
+custom_qq <- ggplot(qq_data, aes(x = theoretical, y = empirical)) +
+  # Add the 1:1 reference line
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed", linewidth = 1.5) +
+  geom_point(size = 4, fill = alpha("white", 0), shape = 21, color = "black", stroke = 1.5) +
+  labs(
+    x = "Expected Quantiles",
+    y = "Empirical Quantiles"
+  ) +
+  style
+
+print(custom_qq)
+ggsave(
+  "./figures/during_migration/pauses_qq_plot.png",
+  plot = custom_qq,
+  width = 7,
+  height = 7
+)
+
+#autocorrelation
 time_num <- as.numeric(data_env$arrival) # or data_env$time (numeric index)
-DHARMa::testTemporalAutocorrelation(simRes, time = time_num, plot = TRUE)
+DHARMa::testTemporalAutocorrelation(sim, time = time_num, plot = TRUE)
 
+#accuracy
 pred_probs <- predict(mod_tag, type = "response")
 
 # Convert probabilities to class labels (threshold 0.5)

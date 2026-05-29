@@ -196,16 +196,17 @@ p <- ggplot(data_env_long, aes(x = label, y = value, fill = label)) + #choose th
   theme(
     axis.title.y = element_blank(),
     axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 20),
     axis.text.x = element_blank(),
     strip.text = element_text(size = 20),
     legend.position = "bottom",
     legend.title = element_blank()
   ) +
-  windows(width = 16, height = 6) #was 5
+  windows(width = 16, height = 5) #was 5
 plot(p)
-# ggsave(
-#   "./figures/Clustering/boxplot_labelled_non_tidal_Qscaled.png"
-# )
+ggsave(
+  "./figures/Clustering/boxplot_labelled_non_tidal_Qscaled.png"
+)
 
 ######################################################
 # Short-term trigger - INTERPOLATED DATA
@@ -423,7 +424,7 @@ ggplot(data_env, aes(x = V, y = Tw, color = label)) +
 mod_tag <- glmer(
   label_bin ~ Q_an + photoperiod + (1 | tag_serial_number) + R,
   data = data_env,
-  family = binomial(link = "cloglog"),
+  family = binomial(link = "logit"),#"logit"
   control = glmerControl(optimizer = "bobyqa"),
   nAGQ = 90
 )
@@ -438,12 +439,40 @@ isSingular(mod_tag, tol = 1e-4) #FALSE =OK
 #iNDEPENDENCE OF OBSERVATIONS (conditional on random effects)
 #Use simulated residuals to check assumptions
 
-sim <- simulateResiduals(fittedModel = mod_tag, n = 10000)
+sim <- simulateResiduals(fittedModel = mod_tag)#n = 10000, refit = T, plot = TRUE
 plot(sim) # overall diagnostics
+
+#plot for in supplementary material
+#scaled residuals
+res <- sim$scaledResiduals
+
+#theoretical and empirical quantiles
+qq_data <- data.frame(
+  theoretical = qunif(ppoints(length(res))),
+  empirical = sort(res)
+)
+
+#plot
+custom_qq <- ggplot(qq_data, aes(x = theoretical, y = empirical)) +
+  # Add the 1:1 reference line
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed", linewidth = 1.5) +
+  geom_point(size = 4, fill = alpha("white", 0), shape = 21, color = "black", stroke = 1.5) +
+  labs(
+    x = "Expected Quantiles",
+    y = "Empirical Quantiles"
+  ) +
+  style
+
+print(custom_qq)
+ggsave(
+  "./figures/onset_of_migration/gl(m)m/qq_plot_onset.png",
+  plot = custom_qq,
+  width = 7,
+  height = 7
+)
 testUniformity(sim) # residual distribution
 testDispersion(sim) # over/underdispersion
-testZeroInflation(sim)
-testOutliers(sim) #no outliers
+testQuantiles(sim, quantile = c(0.25, 0.5, 0.75)) # outliers
 
 # Test autocorrelation
 time_num <- as.numeric(data_env$arrival)

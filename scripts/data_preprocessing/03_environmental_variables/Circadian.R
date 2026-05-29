@@ -133,7 +133,7 @@ colorscheme <- c(
 p2 <- ggplot(data_eels, aes(x = hour(departure))) +
   geom_bar(aes(fill = departure_circadian)) +
   scale_fill_manual(values = colorscheme, na.value = "grey60") +
-  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
+  coord_radial(r.axis.inside = TRUE, expand = FALSE, start = pi/2) +
   labs(
     fill = "Circadian phase:",
     x = "Hour of departure",
