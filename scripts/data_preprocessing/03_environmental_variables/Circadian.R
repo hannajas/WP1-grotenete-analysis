@@ -130,35 +130,41 @@ colorscheme <- c(
   twilight = grey1
 )
 # departures (with legend)
-p2 <- ggplot(data_eels, aes(x = hour(departure))) +
-  geom_bar(aes(fill = departure_circadian)) +
+p2 <- ggplot(data_eels, aes(x = hour(departure) + 0.5)) +
+  geom_bar(aes(fill = departure_circadian), width = 0.85) +
   scale_fill_manual(values = colorscheme, na.value = "grey60") +
-  coord_radial(r.axis.inside = TRUE, expand = FALSE, start = pi/2) +
+  coord_radial(r.axis.inside = FALSE, expand = FALSE) + #start = pi/2
   labs(
     fill = "Circadian phase:",
     x = "Hour of departure",
     y = "# observations"
   ) +
   style +
-  # scale_x_continuous(
-  #   breaks = seq(0, 2 * pi - bin_width, by = pi / 4),
-  #   labels = parse(text = c("0", "pi/4", "pi/2", "3*pi/4", "pi","5*pi/4", "3*pi/2", "7*pi/4")),
-  #   limits = c(0, 2 * pi) # ensure full circle
-  # ) +
+  scale_x_continuous(
+    limits = c(0, 24),
+    breaks = seq(0, 23, by = 4),
+    expand = c(0, 0)
+  ) +
   theme(
     legend.position = "bottom",
     strip.text = element_text(size = 25),
-    axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1)
+    axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1, size = 28),
     # axis.title.x = element_text(size = 24),
     # axis.title.y = element_text(size = 24),
     # axis.text.x = element_text(size = 24),
     # axis.text.y = element_text(size = 24)
+    axis.text.y = element_text(vjust = 0.5, hjust = 1, size = 28),
+    axis.title.y = element_text(hjust = 0.87, margin = margin(r = 8))
   ) + #rename legend title
   facet_wrap(~zone)
 
 #print(p1 / p2)
 print(p2)
-ggsave("./figures/Circadian/circadian_tidal_dep_bw.png", width = 12, height = 6)
+ggsave(
+  "./figures/Circadian/circadian_tidal_dep_bw_new.png",
+  width = 12,
+  height = 6
+)
 # meeste arrivals en departures tussen 18u en 21u
 
 # compare the proportions of arrivals and departures in the different phases

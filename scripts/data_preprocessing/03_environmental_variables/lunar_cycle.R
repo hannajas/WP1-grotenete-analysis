@@ -204,9 +204,9 @@ data_eels_lunar <- data_eels_lunar_raw %>%
 # data_eels_lunar <- read_csv(
 #   './data/interim/migration_circadian.csv'
 # )
-p2 <- ggplot(data_eels_lunar, aes(x = days_since_last_full)) + #hier hoever van hoog en laag tij "x = days_since_last_full" OR x = hour(arrival
-  geom_bar(aes(fill = event)) + #, color = "black"
-  coord_radial(r.axis.inside = TRUE, expand = FALSE) +
+p2 <- ggplot(data_eels_lunar, aes(x = days_since_last_full + 0.5)) + #hier hoever van hoog en laag tij "x = days_since_last_full" OR x = hour(arrival
+  geom_bar(aes(fill = event), width = 0.85) + #, color = "black"
+  coord_radial(r.axis.inside = FALSE, expand = FALSE) +
   # scale_x_continuous(
   #   limits = c(0, 1),
   #   breaks = c(0, 0.10, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1),
@@ -231,22 +231,17 @@ p2 <- ggplot(data_eels_lunar, aes(x = days_since_last_full)) + #hier hoever van 
     strip.text = element_text(size = 25),
     legend.position = "bottom",
     panel.grid.major = element_line(colour = "grey90"),
-    axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1)
+    axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1),
+    axis.title.y = element_text(hjust = 0.85, margin = margin(r = 8))
   ) +
-  labs(y = element_blank(), x = "Days after full moon") +
-  annotate(
-    "text",
-    x = 30, # place at "north" outer edge
-    y = max(table(data_eels_lunar$days_since_last_full)) * 0.5, # halfway up radial axis
-    label = "# obs",
-    angle = 90, # vertical orientation
-    hjust = 0.4,
-    vjust = 1.4,
-    size = 11
-  ) #+
+  labs(y = "# observations", x = "Days after full moon")
 # facet_wrap(~zone)
 print(p2)
-ggsave("./figures/lunar/lunar_cycle_detections_bw.png", height = 7, width = 8)
+ggsave(
+  "./figures/lunar/lunar_cycle_detections_bw_new.png",
+  height = 7,
+  width = 9
+)
 
 test <- data_eels_lunar %>%
   filter(

@@ -115,7 +115,7 @@ data_circadian <- read_csv(
     departure
   ))
 
-data <- left_join(
+data <- dplyr::left_join(
   data_env,
   data_circadian,
   by = c("tag_serial_number", "arrival", "departure")
@@ -301,15 +301,15 @@ ggsave(
 ######################################################
 # Time of onset (WITH RAW DATA)
 ######################################################
-# data_onset <- data %>%
-#   group_by(tag_serial_number) %>%
-#   filter(row_number() == first_migratory_idx[1])
+data_onset <- data %>%
+  group_by(tag_serial_number) %>%
+  filter(row_number() == first_migratory_idx[1])
 
 p <- ggplot(data_onset, aes(x = hour(departure))) + #hour(departure)
-  geom_bar(fill = grey1) + #"#F39C12"
-  coord_radial(r.axis.inside = TRUE, expand = FALSE) + # rotate so 0 is at north (start = -pi/120, direction = 1)
+  geom_bar(fill = grey1, width = 0.85) + #"#F39C12"
+  coord_radial(r.axis.inside = FALSE, expand = FALSE) + # rotate so 0 is at north (start = -pi/120, direction = 1)
   scale_x_continuous(
-    breaks = seq(0, 21, by = 3), # 0,3,6,9,12,15,18,21
+    breaks = seq(0, 24, by = 3), # 0,3,6,9,12,15,18,21
     limits = c(0, 24) # ensure full circle
   ) +
   # scale_x_continuous(
@@ -322,28 +322,20 @@ p <- ggplot(data_onset, aes(x = hour(departure))) + #hour(departure)
     #axis.line = element_blank(),
     strip.text = element_text(size = 25),
     legend.position = "none",
-    axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1)
+    axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1),
+    axis.text.y = element_text(vjust = 0.5, hjust = 1),
+    axis.title.y = element_text(hjust = 0.77, margin = margin(r = 10))
   ) +
   labs(
     #title = "Onset of migration",
     x = "Hour of onset",
-    y = element_blank()
-  ) + #change position of label y axis
-  # guides(fill = guide_legend(title = "Circadian phase")) +
-  annotate(
-    "text",
-    x = 24, # place at "north" outer edge
-    y = max(table(hour(data_onset$departure))) * 0.5, # halfway up radial axis
-    label = "# eels",
-    angle = 90, # vertical orientation
-    hjust = 0.4,
-    vjust = 1.4,
-    size = 11
-  )
+    y = "# eels"
+  ) #change position of label y axis
+# guides(fill = guide_legend(title = "Circadian phase")) +
 print(p)
 #save plot
 ggsave(
-  "./figures/onset_of_migration/onset_migration_bw.png",
+  "./figures/onset_of_migration/onset_migration_bw_new.png",
   width = 7,
   height = 7
 )
@@ -424,7 +416,7 @@ ggplot(data_env, aes(x = V, y = Tw, color = label)) +
 mod_tag <- glmer(
   label_bin ~ Q_an + photoperiod + (1 | tag_serial_number) + R,
   data = data_env,
-  family = binomial(link = "logit"),#"logit"
+  family = binomial(link = "logit"), #"logit"
   control = glmerControl(optimizer = "bobyqa"),
   nAGQ = 90
 )
@@ -439,7 +431,7 @@ isSingular(mod_tag, tol = 1e-4) #FALSE =OK
 #iNDEPENDENCE OF OBSERVATIONS (conditional on random effects)
 #Use simulated residuals to check assumptions
 
-sim <- simulateResiduals(fittedModel = mod_tag)#n = 10000, refit = T, plot = TRUE
+sim <- simulateResiduals(fittedModel = mod_tag) #n = 10000, refit = T, plot = TRUE
 plot(sim) # overall diagnostics
 
 #plot for in supplementary material
@@ -455,8 +447,20 @@ qq_data <- data.frame(
 #plot
 custom_qq <- ggplot(qq_data, aes(x = theoretical, y = empirical)) +
   # Add the 1:1 reference line
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed", linewidth = 1.5) +
-  geom_point(size = 4, fill = alpha("white", 0), shape = 21, color = "black", stroke = 1.5) +
+  geom_abline(
+    intercept = 0,
+    slope = 1,
+    color = "red",
+    linetype = "dashed",
+    linewidth = 1.5
+  ) +
+  geom_point(
+    size = 4,
+    fill = alpha("white", 0),
+    shape = 21,
+    color = "black",
+    stroke = 1.5
+  ) +
   labs(
     x = "Expected Quantiles",
     y = "Empirical Quantiles"

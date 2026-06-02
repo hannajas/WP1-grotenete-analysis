@@ -191,30 +191,33 @@ p1 <- ggplot(data_filter_tij, aes(x = hour(tidetime_arr))) + #hier hoever van ho
 p2 <- ggplot(data_filter_tij, aes(x = hour(tidetime_dep))) + #hier hoever van hoog en laag tij
   geom_bar(aes(fill = tide_departure)) + #choose colors for fill
 
-  coord_radial(r.axis.inside = TRUE, expand = TRUE, start = pi/2) +
+  coord_radial(r.axis.inside = FALSE, expand = FALSE) +
   scale_x_continuous(limits = c(0, 12), breaks = 0:12, expand = c(0, 0)) +
   labs(fill = "Tide:", y = NULL, x = "Hours after high water") +
   scale_fill_manual(values = c("ebb" = grey1, "flood" = "black")) +
   style +
+  labs(y = "# observations") +
   theme(
     #axis.line = element_blank(),
     strip.text = element_text(size = 25),
     legend.position = "bottom",
     panel.grid.major = element_line(colour = "grey90"),
-    axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1)
-  ) +
-  annotate(
-    "text",
-    x = 12, # place at "north" outer edge
-    y = max(table(hour(data_filter_tij$tidetime_dep))) * 0.5, # halfway up radial axis
-    label = "# obs",
-    #angle = 90, # vertical orientation
-    hjust = 0.4,
-    vjust = 1.4,
-    size = 11
-  )
+    axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1),
+    axis.text.y = element_text(vjust = 0.5, hjust = 1),
+    axis.title.y = element_text(hjust = 0.87, margin = margin(r = 10))
+  ) #+
+# annotate(
+#   "text",
+#   x = 12, # place at "north" outer edge
+#   y = max(table(hour(data_filter_tij$tidetime_dep))) * 0.5, # halfway up radial axis
+#   label = "# obs",
+#   angle = 90, # vertical orientation
+#   hjust = 0.4,
+#   vjust = 1.4,
+#   size = 11
+# )
 print(p2)
-ggsave("./figures/Tide/tidal_zone_dep_bw.png", p2, width = 7, height = 7)
+ggsave("./figures/Tide/tidal_zone_dep_bw_new.png", p2, width = 7, height = 7)
 
 write_csv(
   data_filter_tij,
