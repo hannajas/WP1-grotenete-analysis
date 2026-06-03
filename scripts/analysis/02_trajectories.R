@@ -1,6 +1,7 @@
-library(tidyverse)
-library(dplyr)
-library(lubridate)
+# Calculation durations and speeds of the eel trajectories
+# by Hanna Jaspaert
+# Hanna.Jaspaert@UGent.be
+
 library(tidyquant)
 library(patchwork)
 library(geosphere)
@@ -62,7 +63,6 @@ data %>%
 
 #########################################################################################################
 # speed tidal, non-tidal and whole trip
-# Split data by tag_serial_number
 data_list <- split(data, f = data$tag_serial_number)
 
 # Function to compute average speed for a subset of data
@@ -146,32 +146,6 @@ anova_model <- aov(
 )
 summary(anova_model)
 
-#########################################################################################################
-#visualize
-data %>%
-  group_by(tag_serial_number, cluster, zone) %>%
-  summarise(speed_m_s = mean(speed_m_s, na.rm = TRUE)) %>%
-  ungroup()
-ggplot(aes(y = speed_m_s)) +
-  geom_boxplot(fill = "skyblue", alpha = 0.7, outlier.color = "red") +
-  #geom_jitter(width = 0.15, alpha = 0.6) +
-  labs(
-    title = "Average swimming speeds by zone type",
-    x = "Zone type",
-    y = "Average speed (m/s)"
-  ) +
-  theme_minimal(base_size = 14)
-
-ggplot(average_speeds_long, aes(x = zone_type, y = average_speed)) +
-  geom_boxplot(fill = "skyblue", alpha = 0.7, outlier.color = "red") +
-  geom_jitter(width = 0.15, alpha = 0.6) +
-  labs(
-    title = "Average swimming speeds by zone type",
-    x = "Zone type",
-    y = "Average speed (m/s)"
-  ) +
-  theme_minimal(base_size = 14)
-
 summary_speed <- summary(average_speeds_df)
 #get standard deviation of average speeds
 sd_speed <- sapply(average_speeds_df[, -1], sd, na.rm = TRUE)
@@ -182,64 +156,43 @@ average_speed_df <- average_speeds_df %>%
   mutate(tag_serial_number = as.numeric(tag_serial_number))
 eeldata <- left_join(metadata_eel, average_speed_df, by = "tag_serial_number")
 
-eeldata %>%
-  ggplot(aes(x = length1, y = tidal)) +
-  geom_point() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  geom_smooth(method = "lm")
 
-
-# other visualizations
-# density plot of the average speed
-data %>%
+#########################################################################################################
+# speed tidal, non-tidal and whole trip
+mig_durations <- data %>%
   group_by(tag_serial_number) %>%
-  summarise(mean_speed = mean(migration_speed, na.rm = TRUE)) %>%
-  ggplot(aes(x = mean_speed)) +
-  geom_density() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-# link weight and length
-ggplot(eeldata) +
-  geom_point(aes(x = length1, y = weight)) +
-  geom_smooth(method = "lm")
-
-
-#plot density plot of migration_speed
-data %>%
-  ggplot(aes(
-    x = speed_m_s,
-    color = downstream_migration,
-    fill = downstream_migration
-  )) +
-  geom_density(alpha = 0.7)
-
-
-# plot speed distribution
-# plot the speed distribution
-g <- ggplot()
-g <- g +
-  theme(
-    axis.text.x = element_text(size = 14, colour = "black", angle = 90),
-    axis.title.x = element_text(size = 16),
-    axis.title.y = element_text(size = 16),
-    axis.text.y = element_text(size = 14)
+  summarise(
+    migration_duration = as.numeric(difftime(
+      max(departure[label == "migration"], na.rm = TRUE),
+      if (any(label == "resident", na.rm = TRUE)) {
+        max(departure[label == "resident"], na.rm = TRUE)
+      } else {
+        min(arrival, na.rm = TRUE)
+      },
+      units = "days"
+    ))
+  ) %>%
+  mutate(
+    migration_duration = ifelse(
+      is.infinite(migration_duration),
+      NA,
+      migration_duration
+    )
   )
-g <- g +
-  theme(
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank(),
-    axis.line = element_line(colour = "black")
+mean(mig_durations$migration_duration, na.rm = TRUE)
+sd(mig_durations$migration_duration, na.rm = TRUE)
+
+tot_durations <- data %>%
+  group_by(tag_serial_number) %>%
+  summarise(
+    total_duration = as.numeric(difftime(
+      max(departure, na.rm = TRUE),
+      min(arrival, na.rm = TRUE),
+      units = "days"
+    ))
+  ) %>%
+  mutate(
+    total_duration = ifelse(is.infinite(total_duration), NA, total_duration)
   )
-g <- g +
-  geom_density(
-    aes(x = speed_m_s),
-    data = speed,
-    fill = "#69b3a2",
-    color = "#e9ecef",
-    alpha = 0.8
-  )
-g <- g + scale_x_log10(guide = "axis_logticks")
-g <- g + geom_vline(xintercept = 0.01, linetype = "dotted", linewidth = 1)
-print(g)
-# ggsave('./figures/speed_m_s_distribution.png')
+mean(tot_durations$total_duration, na.rm = TRUE)
+sd(tot_durations$total_duration, na.rm = TRUE)

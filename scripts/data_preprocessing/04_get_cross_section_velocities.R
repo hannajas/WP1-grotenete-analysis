@@ -1,12 +1,6 @@
 # Calculation of the water velocity at 5 location with Q and H-area data (obtained by Maarten Deschamps HIC)
 # by Hanna Jaspaert
 # Hanna.Jaspaert@UGent.be
-
-library(lubridate)
-library(dplyr)
-library(ggplot2)
-library(tidyr)
-library(tidyverse)
 library(patchwork)
 
 source('./src/get_cross_section_velocity_function.R')

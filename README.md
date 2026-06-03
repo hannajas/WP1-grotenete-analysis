@@ -120,13 +120,13 @@ Analysis
     + looking at seperate eels (less false resident in straightforward migration part)
     + first value is NA (for each eel)
     + 1 = resident, 2 = migration
-
-* `02_onset_migration.R:` Resident Vs migration: Is there a difference in environmental variables? Are there short-term triggers to onset migration?
+* `02_trajectories.R:` Calculate the average durations and speeds
+* `03_onset_migration.R:` Resident Vs migration: Is there a difference in environmental variables? Are there short-term triggers to onset migration?
     + data selection: non-tidal, remove the first day after release
         - add column: label --> 'resident' and 'migration' and later for the model: label_bin --> 0 = resident and 1 = migration
     + Boxplot to see difference in conditions
     + Boxplots to see triggers
-* `03_during_migration.R:`
+* `04_during_migration.R:`
     + add column: label --> 'migratory' and 'resting' and later for the model: label_bin --> 0 = migratory and 1 = resting
 
 

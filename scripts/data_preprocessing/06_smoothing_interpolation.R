@@ -1,15 +1,12 @@
 if (!require(devtools)) {
   install.packages('devtools')
 }
-library(tidyverse)
-library(lubridate)
 library(sf)
 library(crawl)
 library(ggspatial)
 library(mapview)
 library(prettymapr)
 library(dbscan)
-library(dplyr)
 library(adehabitatLT)
 library(factoextra)
 

@@ -2,8 +2,6 @@ library("sf")
 library("raster")
 library("mapview")
 library("leaflet")
-library(tidyverse)
-library(dplyr)
 library(terra)
 
 source("./src/coordinate_to_river1D_function.R")

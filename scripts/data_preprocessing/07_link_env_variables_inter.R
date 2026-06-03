@@ -1,6 +1,3 @@
-library(tidyverse)
-library(dplyr)
-library(lubridate)
 library(tidyquant)
 library(patchwork)
 library(geosphere)
