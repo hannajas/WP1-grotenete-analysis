@@ -12,26 +12,26 @@ true_scale <- TRUE
 # load and process data
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
-#INTERPOLATED DATA
-# data_raw <- read.csv(
-#   "./data/interim/migration_env_inter.csv",
-#   header = TRUE,
-#   sep = ","
-# ) %>%
-#   mutate(
-#     arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
-#     departure = ymd_hms(departure, tz = "UTC", truncated = 3),
-#     date = ymd_hms(date, tz = "UTC", truncated = 3)
-#   ) %>%
-#   group_by(tag_serial_number) %>%
-#   filter(date > date[[1]] + days(1))
-
-#RAW DATA
-data_raw <- read_csv(
-  './data/interim/migration_env_filter.csv',
-  show_col_types = FALSE
-) %>%
-  group_by(tag_serial_number)
+if (data_type == "raw") {
+  data_raw <- read_csv(
+    './data/interim/migration_env_filter.csv',
+    show_col_types = FALSE
+  ) %>%
+    group_by(tag_serial_number)
+} else if (data_type == "interpolated") {
+  data_raw <- read.csv(
+    "./data/interim/migration_env_inter.csv",
+    header = TRUE,
+    sep = ","
+  ) %>%
+    mutate(
+      arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
+      departure = ymd_hms(departure, tz = "UTC", truncated = 3),
+      date = ymd_hms(date, tz = "UTC", truncated = 3)
+    ) %>%
+    group_by(tag_serial_number) %>%
+    filter(date > date[[1]] + days(1))
+}
 
 #als dat a temp een kolom data bevat
 no_detections <- c(1171747, 1171751, 1294168, 1294172) #leave out eels with only one detection
@@ -122,8 +122,10 @@ data <- dplyr::left_join(
 )
 
 ######################################################
-#Conditions
+# Conditions resident vs migratory (RAW DATA)
 ######################################################
+#USE RAW DATA, change in config.R
+
 #data_env$R <- log(data_env$R)
 var <- "speed_m_s"
 data_env %>%
@@ -211,7 +213,7 @@ ggsave(
 ######################################################
 # Short-term trigger - INTERPOLATED DATA
 ######################################################
-#USE INTERPOLATE DATA (uncommnent line 16-27)
+#USE INTERPOLATE DATA, change in config.R
 variable <- "Q" #Tw?R?
 delta_variable <- "delta_Q" #delta_Tw? delta_R?
 

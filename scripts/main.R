@@ -1,9 +1,7 @@
 # --------------------------------------------------------------------------------------------
 # IF data not yet available (./data)  --------------------------------------------------------
-
-# get environmental variables from wateRinfo
-source("./data_download/wateRinfo.R")
-#get raw detection data??
+# UNCOMMENT LINE BELOW TO GET ENVIRONMENTAL DATA FROM WATERINFO
+# source("./data_download/wateRinfo.R")
 
 # --------------------------------------------------------------------------------------------
 #load all general settings  ------------------------------------------------------------------

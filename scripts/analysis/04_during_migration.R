@@ -1,3 +1,7 @@
+# Investigate migration pauses and conditions during migration
+# by Hanna Jaspaert
+# Hanna.Jaspaert@UGent.be
+
 library(lme4)
 library(DHARMa)
 
@@ -11,25 +15,26 @@ library(DHARMa)
 # load and process data
 metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 
-#inter
-# data_env <- read.csv(
-#   "./data/interim/migration_env_inter.csv",
-#   header = TRUE,
-#   sep = ","
-# ) %>%
-#   mutate(
-#     arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
-#     departure = ymd_hms(departure, tz = "UTC", truncated = 3),
-#     date = ymd_hms(date, tz = "UTC", truncated = 3)
-#   ) %>%
-#   group_by(tag_serial_number)
+if (data_type == "raw") {
+  data_env <- read_csv(
+    './data/interim/migration_env_filter.csv',
+    show_col_types = FALSE
+  ) %>%
+    group_by(tag_serial_number)
+} else if (data_type == "interpolated") {
+  data_env <- read.csv(
+    "./data/interim/migration_env_inter.csv",
+    header = TRUE,
+    sep = ","
+  ) %>%
+    mutate(
+      arrival = ymd_hms(arrival, tz = "UTC", truncated = 3),
+      departure = ymd_hms(departure, tz = "UTC", truncated = 3),
+      date = ymd_hms(date, tz = "UTC", truncated = 3)
+    ) %>%
+    group_by(tag_serial_number)
+}
 
-#raw
-data_env <- read_csv(
-  './data/interim/migration_env_filter.csv',
-  show_col_types = FALSE
-) %>%
-  group_by(tag_serial_number) #%>%
 
 # calculate the average duration between 2 arrivals
 summary(as.duration(data_env$arrival %--% lag(data_env$arrival)))
@@ -224,8 +229,20 @@ qq_data <- data.frame(
 #plot
 custom_qq <- ggplot(qq_data, aes(x = theoretical, y = empirical)) +
   # Add the 1:1 reference line
-  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed", linewidth = 1.5) +
-  geom_point(size = 4, fill = alpha("white", 0), shape = 21, color = "black", stroke = 1.5) +
+  geom_abline(
+    intercept = 0,
+    slope = 1,
+    color = "red",
+    linetype = "dashed",
+    linewidth = 1.5
+  ) +
+  geom_point(
+    size = 4,
+    fill = alpha("white", 0),
+    shape = 21,
+    color = "black",
+    stroke = 1.5
+  ) +
   labs(
     x = "Expected Quantiles",
     y = "Empirical Quantiles"
@@ -259,11 +276,17 @@ print(accuracy)
 
 ######################################################
 # Visualize for each eel seperately
+######################################################
+#USE RAW DATA (Config.R)
 data_plot <- data_env %>%
   filter(tag_serial_number == 1305785)
 plot_1 <- ggplot(data_plot) +
-  geom_point(aes(x = date, y = V, color = label_bin), size = 2) + #color scale label_bin = 1 --> red
-  geom_point(aes(x = date, y = Tw, color = label_bin), size = 2, shape = "+") +
+  geom_point(aes(x = arrival, y = V, color = label_bin), size = 2) + #color scale label_bin = 1 --> red
+  geom_point(
+    aes(x = arrival, y = Tw, color = label_bin),
+    size = 2,
+    shape = "+"
+  ) +
   scale_color_manual(
     values = c("resting" = "red", "migratory" = "blue"),
     name = "State"
@@ -271,9 +294,11 @@ plot_1 <- ggplot(data_plot) +
   facet_wrap(~tag_serial_number, scales = "free")
 plot_1
 
-# plot L07 Q en Tw
+
+#USE INTERPOLATED DATA (Config.R)
+# plot L10 Q en Tw + resting vs migratory colour
 L10_077_Tw <- read_csv(
-  './data/interim/processed/L07_077_Tw.csv',
+  './data/interim/processed/L10_077_Tw.csv',
   show_col_types = FALSE
 ) %>%
   dplyr::select(Timestamp, Value) %>%
