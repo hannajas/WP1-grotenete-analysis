@@ -1,3 +1,7 @@
+# Importing environmental data by making use of the wateRinfo package
+# by Hanna Jaspaert
+# Hanna.Jaspaert@UGent.be
+
 library("sf")
 library("raster")
 library("mapview")
@@ -11,19 +15,15 @@ source("./src/distance_from_source_to_coordinate_function.R")
 #########################################################################################################################
 #get distance from source
 #########################################################################################################################
-#REMARK: distance_to_source verschilt van paling tot paling (afhankelijk van release location)
-#3 palingen werden op een andere plaats losgelaten
-#hiervoor gaan we moeten corrigeren
-#vertrekken vanaf meest stroomopwaartse release location: line vector --> points (point along geometry)
-#extract coordinates of these points (add geometry attributes)
+# source = most upstream release location of the river segment
 
 #load csv
 lookup_gis <- read_csv(
-  './data/geo_data/grotenete_zeeschelde_lookup_Lambert_gis.csv',
+  './data/geo_data/grotenete_zeeschelde_lookup_Lambert_gis.csv', #QGIS: line vector --> points (point along geometry), extract coordinates of these points (add geometry attributes)
   show_col_types = FALSE
 )
 
-#afstand tot splitsing
+#Distance to
 dist_splits_1 <- lookup_gis %>%
   filter(NAAM == "Grote Nete") %>%
   dplyr::select(distance) %>%
@@ -51,7 +51,7 @@ lookup_gis <- lookup_gis %>%
 dist_splits_2 <- lookup_gis %>%
   filter(NAAM == "rup") %>%
   dplyr::select(distance) %>%
-  max()#Rupel --> Zeescheldt
+  max() #Rupel --> Zeescheldt
 
 
 zee_op <- lookup_gis %>%
@@ -74,7 +74,7 @@ look_up_corr <- rbind(zee_op, zee_af, rest)
 deployments <- read_csv(
   './data/external/receivernetwork_2019_Grotenete.csv',
   show_col_types = FALSE
-) %>%#filter missing values out of coordinates
+) %>% #filter missing values out of coordinates
   filter(!is.na(latitude) & !is.na(longitude))
 #to sf
 deployments_sf <- st_as_sf(

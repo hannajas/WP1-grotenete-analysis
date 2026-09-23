@@ -17,6 +17,7 @@ source("./src/pdf_trajectory.R")
 #data preprocessing  -------------------------------------------------------------------------
 source("./data_preprocessing/01_switch_2D_1D.R")
 source("./data_preprocessing/02_preprocessing_INBO_data.R")
+
 #source 03_environmental_variables
 source("./data_preprocessing/03_environmental_variables/circadian.R")
 source("./data_preprocessing/03_environmental_variables/chemical_var.R")
@@ -31,7 +32,8 @@ source("./data_preprocessing/03_environmental_variables/lunar_cycle.R")
 
 source("./data_preprocessing/04_get_cross_section_velocities.R")
 source("./data_preprocessing/05_link_env_variables.R")
-source("./data_preprocessing/06_link_env_variables_inter.R")
+source("./data_preprocessing/06_smoothing_interpolation.R")
+source("./data_preprocessing/07_link_env_variables_inter.R")
 
 # --------------------------------------------------------------------------------------------
 #data analysis  -------------------------------------------------------------------------

@@ -1,3 +1,7 @@
+# General packages and figure settings
+# by Hanna Jaspaert
+# Hanna.Jaspaert@UGent.be
+
 # packages -------------------------------------------------------------------------
 library(tidyverse)
 library(tidyr)
@@ -23,4 +27,6 @@ grey2 <- "#505050"
 grey1 <- "#979797"
 grey3 <- "#d4d4d4"
 
-
+# resolution for data interpolation
+resolution_s <- "15 min"
+minutes <- 15

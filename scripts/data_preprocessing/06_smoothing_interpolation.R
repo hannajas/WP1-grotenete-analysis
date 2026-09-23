@@ -13,6 +13,7 @@ library(factoextra)
 # Source functions
 source("./src/add_segments_function.R")
 
+# Resolution is set in config.R
 ##########################################################################################
 # simple interpolation of the trajectory
 ##########################################################################################
@@ -37,8 +38,6 @@ data[, c("x", "y")] <- st_coordinates(sf_points)
 # )
 # test <- spTransform(cord.dec, CRS("+proj=utm +zone=31 +ellps=WGS84"))
 # data[, c("x", "y")] <- coordinates(test)
-resolution_s <- "5 min"
-minutes <- 5
 
 data$middledate <- as.POSIXct(data$arrival + data$residence / 2) #PJ werkt op arrival time en niet op middledate
 data$rounded_date <- floor_date(data$middledate, unit = resolution_s)
@@ -101,7 +100,7 @@ data_inter <- left_join(
   by = c("tag_serial_number" = "tag_serial_number", "date" = "rounded_date")
 )
 
-#I want to put values in the data_inter_env$speed_m_s column by filling in all the row above a value with that value
+#put values in the data_inter_env$speed_m_s column by filling in all the row above a value with that value
 
 data_inter <- data_inter %>%
   group_by(tag_serial_number) %>%
@@ -185,4 +184,7 @@ data_inter$station_name[
   data_inter$interpolation_location == 0
 ] <- "rel_grotenete1"
 #save as csv
-#write_csv(data_inter, "./data/interim/migration_inter_5min.csv")
+write_csv(
+  data_inter,
+  paste("./data/interim/migration_inter_", resolution_s, ".csv", sep = "")
+)

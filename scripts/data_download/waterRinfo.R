@@ -48,7 +48,7 @@ for (i in 1:length(ts_id)) {
   write.csv(Tw, path)
 }
 
-# DEBIET ################################################################################################
+# Discharge ################################################################################################
 
 # find timeseries ID by https://download.waterinfo.be/tsmdownload/KiWIS/KiWIS?datasource=1&service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=html&station_no=L10_077&parametertype_name=Q
 

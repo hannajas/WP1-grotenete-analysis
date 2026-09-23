@@ -1,6 +1,3 @@
-library(tidyverse)
-library(dplyr)
-library(sp)
 library(sf)
 library(adehabitatLT)
 library(factoextra)
@@ -74,9 +71,6 @@ data_cluster <- bind_rows(mydfnew.split.eel)
 write_csv(data_cluster, "./data/interim/migration_env_filter.csv")
 
 
-
-
-
 pdf("./figures/Clustering/kmeans_log_sep_eels_test.pdf")
 mydfnew.split.eel <- split(data, data$tag_serial_number) # split dataset based on tag IDs
 
@@ -93,11 +87,6 @@ for (eel in names(mydfnew.split.eel)) {
   print(plot)
 }
 dev.off()
-
-
-
-
-
 
 
 mydfnew.split.eel <- split(data_cluster, data$tag_serial_number)

@@ -77,7 +77,7 @@ speed <- plyr::ldply(speed_list, data.frame)
 speed$.id <- NULL
 
 #######################################################################################################################
-# calculate wheter the migration was downstream
+# calculate whether the migration was downstream
 #######################################################################################################################
 data_list <- split(speed, f = data$tag_serial_number)
 data_temp <- lapply(data_list, function(x) {

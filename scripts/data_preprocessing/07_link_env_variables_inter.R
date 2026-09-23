@@ -23,11 +23,11 @@ metadata <- read_csv('./data/interim/metadata.csv', show_col_types = FALSE)
 p <- 1
 #data from smooting has a resolution of 15 min
 data_inter_env <- read_csv(
-  './data/interim/migration_inter.csv',
+  paste("./data/interim/migration_inter_", resolution_s, ".csv", sep = ""),
   show_col_types = FALSE
 ) %>%
   dplyr::select(-photoperiod)
-variables <- c("Tw","Tw_an","Q_an", "Q", "V", "O", "turb", "S", "R")
+variables <- c("Tw", "Tw_an", "Q_an", "Q", "V", "O", "turb", "S", "R")
 for (var in variables) {
   #runt lang!
   if (!var %in% colnames(data_inter_env)) {

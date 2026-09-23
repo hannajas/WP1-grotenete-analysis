@@ -1,20 +1,27 @@
 # WP1 - Grote Nete Analysis
-<mark>Data last updated on 21-01-2026</mark>
+<mark>Data last updated on 23-09-2026</mark>
 
 ## About
 Linking the eel tracking dataset in the River Grote Nete with environmental variables. This river has an unobstructed water flow with a continuous transition from river to estuary and sea.
 
 This analysis starts from the pre-processing done by Pieterjan Verhelst (https://github.com/PieterjanVerhelst/eel-grotenete-analysis.git). in particular, the dataset "migration.csv" is used as a starting point.
 
+## Abbreviations
+* HW = heigth water
+* LW = low water
+* WS = Western Scheldt River
+* Q = discharge
+
 ## Project structure
+
 
 ### Data
 
 * `/raw:`
 	+ `migration.csv`: dataset containing eel tracks and speed
     + `/discharge:` contains data on the discharge. All excels are named after the station name
-    + `/temperature:` contains temperature data
-    + `/oxygen:` contains oxygen data
+    + `/temperature:` contains water temperature data
+    + `/oxygen:` contains dissolved oxygen data
     + `/rainfall:` contains rainfall data
     + `/salinity:` contains salinity data [psu] (data only on Rupel and Scheldt - less reliable)
     + `/tide:` contains tide data (timestamp and heights at HW and LW, nonregular timestamps)
@@ -23,8 +30,8 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
         - distance_to_source: distance from release location
         - resolution_unit: unit of the resolution
         - resolution_multiplier: multipier of this unit of resolution
-	+ `photoperiod.csv`: dataset containing the daily amaount of daylight (unit: minutes)
-    + `/level:` contains waterlevel data (needed for velocity calcultation)
+	+ `photoperiod.csv`: dataset containing the daily amount of daylight (unit: minutes)
+    + `/level:` contains waterlevel data (to caculate velocity)
     + `/shape:` shape and raster files of the study area (water)
 * `/interim:`
 	+ `migration.csv`: dataset containing eel tracks and alternative speed calculation
@@ -37,8 +44,10 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
     + `/cross_section_H_A`: height area relations for five cross-sections in the study area
 
 ### Scripts
-Run scripts in the following order or alternatively run `main.R` for the full pipeline. * `config.R`: Store useful variables and configuration
+Run scripts in the following order or alternatively run `main.R` for the full pipeline.
 
+Configuration
+* `config.R`: Store useful variables and configuration
 
 Data download
 * `wateRinfo.R:` Making use of the wateRinfo package and save the data at `/raw` (timezone = UCT)
@@ -57,13 +66,12 @@ Data preprocessing
     + calculate the alternative speed by incorporating the residence times at the receivers in the swimtime
         - `\src\calculate_speed_function.R:` function to calculate the speed for a dataframe with data from one eel
     + 'downstream' column: calculate wheter migration is downstream
-    + 'downstream_migration' column: downstream and faster than a certain treshold? ME NIET DUIDELIJK
     + add colums to divide the study area into different zones (boundaries from Keirsebelik et al 2025):
         - tidal: starting at transition Nete to Grote Nete (from gn-3)
-        - transition: 
         - non-tidal: ending +- at convolution of Grote Nete and Wimp (last receiver: gn-6)
+        - transition: between tidal and non-tidal
     + interpolate to find the middle between 2 receivers (interpolation_location)
-    + add column to divide in segements: gn, rup, zes_up, zes_down
+    + add column to divide in segments: gn (grote-nete), rup (rupel), zes_up (scheldt before confluence with rupel), zes_down (scheldt after confluence with rupel)
     + add coordinates of the interpolation_location (making use of the lookup table)
 
 * `03_environmental_variables:` making some figures of the environmental data and do the preprocessing (save the data at `/interim`). For some datatypes also analyses:
@@ -99,7 +107,7 @@ Data preprocessing
             - Q is scaled before inverse distance is applied (to correct for increasing discharge more downstream)
         - 2D (Rainfall): involve all datapoints
 
-* `06_Smoothing_interpolation.R:` (load `/interim/migration_env_filter.csv`)
+* `06_smoothing_interpolation.R:` (load `/interim/migration_env_filter.csv`)
     + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv` (now: resolution = 15 min)
 
 * `07_link_env_variables_inter.R:` linking the environmental variables with the telemetry interpolated data (R becomes the accumulated data)
