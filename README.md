@@ -45,7 +45,7 @@ Data download
 
 Data preprocessing
 * `01_switch_2D_1D.R:`:
-    + load the point vector made in QGIS (includes study area, resolution 1m) --> lookup table
+    + load the point vector made in QGIS (includes study area, resolution 1m, crs:lambert) --> lookup table
     + process so that to each point a distance_to_source is calculated
     + add in NAAM column the river segment: gn, rp, zes_up, zes_down (lookup table saved as: `./data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv`)
     + calculate the distance to source for each receiver (saved in `./data/geo_data/deployments_distance_to_source.csv`)

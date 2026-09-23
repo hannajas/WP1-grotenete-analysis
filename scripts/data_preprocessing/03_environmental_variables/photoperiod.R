@@ -30,7 +30,7 @@ photoperiod_photoperiod <- read_csv(
   "./data/interim/processed/photoperiod_photoperiod.csv"
 )
 
-p <- ggplot(data = env_data, mapping = aes(x = date, y = photoperiod)) +
+p <- ggplot(data = photoperiod_photoperiod, mapping = aes(x = date, y = photoperiod)) +
   geom_point() +
   labs(title = "Photoperiod vs ID", x = "date", y = "Photoperiod (minutes)")
 print(p)

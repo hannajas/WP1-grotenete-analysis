@@ -205,7 +205,12 @@ p2 <- ggplot(data_filter_tij, aes(x = hour(tidetime_dep))) + #hier hoever van ho
     axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1),
     axis.text.y = element_text(vjust = 0.5, hjust = 1),
     axis.title.y = element_text(hjust = 0.87, margin = margin(r = 10))
-  ) #+
+  )
+  scale_x_continuous(
+    limits = c(0, 24),
+    breaks = seq(0, 23, by = 4),
+    expand = c(0, 0)
+  ) + #+
 # annotate(
 #   "text",
 #   x = 12, # place at "north" outer edge

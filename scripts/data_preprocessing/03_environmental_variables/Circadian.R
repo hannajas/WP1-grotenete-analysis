@@ -57,7 +57,7 @@ circadian <- getSunlightTimes(
   as.Date(zes00a_1066_Q$Timestamp),
   lat = 51.216667, # same location as daylength
   lon = 4.6,
-  keep = c("nightEnd", "sunrise", "sunset", "night")
+  #keep = c("nightEnd", "sunrise", "sunset", "night")
 )
 
 # --- CONFIG: choose phases here ---
@@ -125,9 +125,9 @@ walk2(grid$period, grid$event, function(p, e) {
 
 # plot the arrivals
 colorscheme <- c(
-  day = grey2,
-  night = grey3,
-  twilight = grey1
+  day = grey1,
+  night = grey2,
+  twilight = grey3
 )
 # departures (with legend)
 p2 <- ggplot(data_eels, aes(x = hour(departure) + 0.5)) +
@@ -173,6 +173,8 @@ Proportions_contr <- data_eels %>%
   summarise(
     dawn = mean(dawn_w_arr, na.rm = TRUE),
     day = mean(day_w_arr, na.rm = TRUE),
+    day_min = min(day_w_arr, na.rm = TRUE),
+    day_max = max(day_w_arr, na.rm = TRUE),
     dusk = mean(dusk_w_arr, na.rm = TRUE),
     night = mean(night_w_arr, na.rm = TRUE),
     twilight = mean(twilight_w_arr, na.rm = TRUE)
