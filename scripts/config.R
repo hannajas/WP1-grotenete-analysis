@@ -27,11 +27,11 @@ grey2 <- "#505050"
 grey1 <- "#979797"
 grey3 <- "#d4d4d4"
 
-# resolution for data interpolation (06_smoothing_interpolation.R and 07_link_env_variables_inter.R)
+# resolution for data interpolation (11_smoothing_interpolation.R and 12_link_env_variables_inter.R)
 resolution_s <- "15 min"
 minutes <- 15
 
 # Choose datatype (raw or interpolated)
 # 03_onset_migration.R: resident vs migratory (raw) OR short term triggers (interpolated)
 # 04_during_migration.R: GLMM and general conditions (raw) OR some visualization (interpolated)
-data_type <- "interpolated" # "raw" or "interpolated"
+data_type <- "raw" # "raw" or "interpolated"

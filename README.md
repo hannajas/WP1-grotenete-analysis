@@ -1,10 +1,8 @@
 # WP1 - Grote Nete Analysis
-<mark>last updated on 23-09-2026</mark>
+<mark>last updated on 24-09-2026</mark>
 
 ## About
-Linking the eel tracking dataset in the River Grote Nete with environmental variables. This river has an unobstructed water flow with a continuous transition from river to estuary and sea.
-
-This analysis starts from the pre-processing done by Pieterjan Verhelst (https://github.com/PieterjanVerhelst/eel-grotenete-analysis.git). in particular, the dataset "migration.csv" is used as a starting point.
+This repo investigates the environmental factors influencing river eel (_Anguilla anguilla_ L.) migration.  To this end acoustic telemetry data of 39 silver eels tagged and released in the Grote Nete River is used. Unlike well-studied regulated systems, this river has an unobstructed water flow with a continuous transition from river to estuary and sea providing a needed reference framework.
 
 ## Abbreviations
 * HW = heigth water
@@ -14,11 +12,9 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 
 ## Project structure
 
-
 ### Data
 
 * `/raw:`
-	+ `migration.csv`: dataset containing eel tracks and speed
     + `/discharge:` contains data on the discharge. All excels are named after the station name
     + `/temperature:` contains water temperature data
     + `/oxygen:` contains dissolved oxygen data
@@ -33,15 +29,23 @@ This analysis starts from the pre-processing done by Pieterjan Verhelst (https:/
 	+ `photoperiod.csv`: dataset containing the daily amount of daylight (unit: minutes)
     + `/level:` contains waterlevel data (to caculate velocity)
     + `/shape:` shape and raster files of the study area (water)
+    + `deployments.csv:` receiver metadata from ETN
+    + `eel_meta_data/csv`: metadata of eels from ETN
+    + `raw_detection_data`: raw detection data from ETN
 * `/interim:`
+    + `residency.csv`: dataset containing eel tracks (arrival and departure time at receivers)
 	+ `migration.csv`: dataset containing eel tracks and alternative speed calculation
     + `migration_env_filter.csv`: dataset containing eel tracks with alterantive speed calculations and the environmental data (data of WS is removed)
     + `\processed`: contains all environmental data again, now processed. E.g.:
         - 0 --> NA-value, if nessecary
         - changing the timestamps of the daily average discharge
+    + `\anomaly`: contains the environmental data of temperature (deviation from seasonal average)
+    + `metadata.csv`: metadata of environmental data containing their distance along the river (reference = release location)
+* `/geo_data:`
+	+ `distancematrix_2019_grotenete.csv`: distance matrix of the detection station network (matrices are created at https://github.com/inbo/fish-tracking).
 * `/external:`
 	+ `distancematrix_2019_grotenete.csv`: distance matrix of the detection station network (matrices are created at https://github.com/inbo/fish-tracking).
-    + `/cross_section_H_A`: height area relations for five cross-sections in the study area
+    + `release_location_stations.csv`: contains the names of the release locations
 
 ### Scripts
 Run scripts in the following order or alternatively run `main.R` for the full pipeline.
