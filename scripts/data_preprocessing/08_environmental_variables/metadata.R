@@ -12,7 +12,7 @@ library(sf)
 source("./src/add_segments_function.R")
 
 #Load data
-data <- read_csv('./data/raw/migration.csv', show_col_types = FALSE)
+data <- read_csv('./data/interim/migration.csv', show_col_types = FALSE)
 # Load metadata
 metadata <- read_csv('./data/raw/metadata/Metadata.csv', show_col_types = FALSE)
 n_data <- dim(metadata)[1] #number of variables
@@ -22,8 +22,30 @@ metadata$station_latitude <- NA
 
 #add longitude and latitude of the rainfall stations
 stations <- get_stations("rainfall", frequency = "15min") %>%
-  filter(station_longitude > 4 & station_latitude > 50.88) %>%
-  arrange(station_no)
+  filter(station_no %in% c("ALMC_30BO01008",
+  "ALMC_30KP01011",
+  "ALMC_30MA12001",
+  "ALMC_30RT01007",
+  "ALMC_30TE01007",
+  "P03_036",
+  "P04_001",
+  "P04_027",
+  "P07_006",
+  "P07_022",
+  "P08_018",
+  "P08_028",
+  "P08_033",
+  "P09_016",
+  "P09_025",
+  "P09_034",
+  "P09_035",
+  "P10_011",
+  "P10_042",
+  "P11_002",
+  "P11_007",
+  "P11_043"
+))
+
 metadata[metadata$type == "R", ]$station_longitude <- stations$station_longitude
 metadata[metadata$type == "R", ]$station_latitude <- stations$station_latitude
 

@@ -27,7 +27,7 @@ data_inter_env <- read_csv(
   show_col_types = FALSE
 ) %>%
   dplyr::select(-photoperiod)
-variables <- c("Tw", "Tw_an", "Q_an", "Q", "V", "O", "turb", "S", "R")
+variables <- c("Tw_an", "Q_an", "V", "O", "turb", "S", "R")
 for (var in variables) {
   #runt lang!
   if (!var %in% colnames(data_inter_env)) {

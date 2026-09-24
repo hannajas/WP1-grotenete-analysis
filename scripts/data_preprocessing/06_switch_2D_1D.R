@@ -72,7 +72,7 @@ look_up_corr <- rbind(zee_op, zee_af, rest)
 # Calculate the distance to source for each receiver
 #load deployments
 deployments <- read_csv(
-  './data/geo_data/receivernetwork_2019_Grotenete.csv',
+  './data/interim/receivernetwork_2019_Grotenete.csv',
   show_col_types = FALSE
 ) %>% #filter missing values out of coordinates
   filter(!is.na(latitude) & !is.na(longitude))
