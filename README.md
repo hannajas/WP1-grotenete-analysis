@@ -71,14 +71,20 @@ Data preprocessing
 	+ 5a. `get_nearest_stations.R`: 	function to get the stations which are near a given station (where near means that the distance is smaller than a certain given limit, e.g. detection range).
 		- --> Generate residency dataset and store it in `/interim`
 	+ 5b. `get_timeline.R`: general function to extract the smoothed track for one eel (via its `transmitter ID`)
+* `06_calculate_speed.R`: Calculate movement speeds between consecutive detection stations. Also calculates swim distance, swim time, cumulative swim distance and station distance from source station.
+	+ 6a. `calculate_speed_function.R`: function to calculate speed between consecutive displacements; based on a function in Hugo Flavio's `actel` package
+	+ 6b. `calculate_sourcedistance_function.R`: function to calculate the station distance from a 'source' station; based on a function in Hugo Flavio's `actel` package
+* `07_identify_migration.R`: Code that identifies records as migration based on a speed and distance threshold until the most downstream station. The method also includes a stationary threshold, which defines from which movement distance an eel can be considered non-statinoary.
+	+ 7a. `identify_migration_functions.R`: functions to identify migration.
 
-* `06_switch_2D_1D.R:`:
+
+* `08_switch_2D_1D.R:`:
     + load the point vector made in QGIS (includes study area, resolution 1m, crs:lambert) --> lookup table
     + process so that to each point a distance_to_source is calculated
     + add in NAAM column the river segment: gn, rp, zes_up, zes_down (lookup table saved as: `./data/geo_data/grotenete_zeeschelde_lookup_Lambert.csv`)
     + calculate the distance to source for each receiver (saved in `./data/geo_data/deployments_distance_to_source.csv`)
 
-* `07_preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration.csv` and `/interim/migration_filter.csv`)
+* `09_preprocessing_INBO_data.R:` preprocess the telemetry data (starting from `/raw/migration.csv` and saved at `/interim/migration.csv` and `/interim/migration_filter.csv`)
     + timestamps in raw data are in timezone UTC
     + recalcutate the smooth eel track (remove timelimit for which a new track was started)
     + recalculate the distance_to_source (because of higher resolution if the lookup table in comparison to the original distance matrix)
@@ -93,7 +99,7 @@ Data preprocessing
     + add column to divide in segments: gn (grote-nete), rup (rupel), zes_up (scheldt before confluence with rupel), zes_down (scheldt after confluence with rupel)
     + add coordinates of the interpolation_location (making use of the lookup table)
 
-* `08_environmental_variables:` making some figures of the environmental data and do the preprocessing (save the data at `/interim`). For some datatypes also analyses:
+* `10_environmental_variables:` making some figures of the environmental data and do the preprocessing (save the data at `/interim`). For some datatypes also analyses:
     + `\chemical_var.R:` preprocessing of salinity, turbidity and dissolved oxygen
     + `\discharge.R:` preprocessing of discharge
     + `\rainfall.R:` preprocessing of rainfall. Later in the analysis the accumulated rainfall will be used (release time as startingpoint)
@@ -107,13 +113,13 @@ Data preprocessing
     + `\photoperiod.R`    
 
 
-* `09_get_cross_section_velocities.R:` Calculate the water velocity for 5 locations (5 locations with Q-data and cross section data)
+* `11_get_cross_section_velocities.R:` Calculate the water velocity for 5 locations (5 locations with Q-data and cross section data)
 
     For each location:
     + `\src\get_velocity_function.R:` Making use of waterlevel, discharge and H-A relations (save the data at `/interim`)
 
 
-* `10_link_env_variables.R:` linking the environmental variables with the telemetry raw data
+* `12_link_env_variables.R:` linking the environmental variables with the telemetry raw data
     
     For each type of environmental data (upload `./data/interim/migration_filter.csv` and save to `./data/interim/migration_env_filter.csv`):
 
@@ -126,10 +132,10 @@ Data preprocessing
             - Q is scaled before inverse distance is applied (to correct for increasing discharge more downstream)
         - 2D (Rainfall): involve all datapoints
 
-* `11_smoothing_interpolation.R:` (load `/interim/migration_env_filter.csv`)
+* `13_smoothing_interpolation.R:` (load `/interim/migration_env_filter.csv`)
     + Interpolation of the trajectory: output saved in `/interim/migration_inter.csv` (now: resolution = 15 min)
 
-* `12_link_env_variables_inter.R:` linking the environmental variables with the telemetry interpolated data (R becomes the accumulated data)
+* `14_link_env_variables_inter.R:` linking the environmental variables with the telemetry interpolated data (R becomes the accumulated data)
 
     + Interpolated telemetry data is created in `Smoothing_interpolation.R` (load `/interim/migration_inter.csv`)
     + Here for all environmental data:

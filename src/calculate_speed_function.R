@@ -6,6 +6,7 @@ movementSpeeds <- function(movements, dist.mat) {
   movements$speed_m_s[1] <- NA
   
   movements$residence <- as.period(movements$arrival %--% movements$departure, unit="seconds")
+  movements$residence_s <- as.numeric(movements$residence, units = "seconds")
 
   if (nrow(movements) > 1) {
     capture <- lapply(2:nrow(movements), function(i) {
@@ -13,8 +14,8 @@ movementSpeeds <- function(movements, dist.mat) {
 
         a.sec <- as.vector(difftime(movements$arrival[i], movements$departure[i - 1], units = "secs"))
         my.dist <- dist.mat[movements$station_name[i], gsub(" ", ".", movements$station_name[i - 1])]
-        a.sec.adj <- as.vector(round(a.sec, 6)+ movements$residence[i]/2 + movements$residence[i-1]/2)
-        movements$swimtime_s[i] <<- round(a.sec, 6)+ movements$residence[i]/2 + movements$residence[i-1]/2
+        a.sec.adj <- as.vector(round(a.sec, 6)+ movements$residence_s[i]/2 + movements$residence_s[i-1]/2)
+        movements$swimtime_s[i] <<- round(a.sec, 6)+ movements$residence_s[i]/2 + movements$residence_s[i-1]/2
         movements$swimdistance_m[i] <<- round(my.dist, 6)
         movements$speed_m_s[i] <<- round(my.dist/a.sec.adj, 6)
         rm(a.sec, my.dist)

@@ -27,7 +27,7 @@ grey2 <- "#505050"
 grey1 <- "#979797"
 grey3 <- "#d4d4d4"
 
-# resolution for data interpolation (11_smoothing_interpolation.R and 12_link_env_variables_inter.R)
+# resolution for data interpolation (13_smoothing_interpolation.R and 14_link_env_variables_inter.R)
 resolution_s <- "15 min"
 minutes <- 15
 

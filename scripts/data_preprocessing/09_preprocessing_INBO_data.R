@@ -14,10 +14,11 @@ distance_matrix <- read.csv(
 )
 
 # Upload dataset
-data <- read_csv('./data/raw/migration_back_up.csv')
+data <- read_csv('./data/interim/migration.csv')
 data$...1 <- NULL
 data$arrival <- ymd_hms(data$arrival)
 data$departure <- ymd_hms(data$departure)
+
 
 #######################################################################################################################
 # Recalculate the smooth eel track (stop timelimit = 1 hour for original preprocessing)
